@@ -262,12 +262,12 @@ const _ = () => {
                       key={ index } 
                       className='flex items-center space-x-2'
                     >
-                      <FileText className='h-5 w-5 text-gray-400' />
+                      <FileText className='h-5 w-5 text-gray-400 v' />
                       <input
                         type='text'
                         placeholder='File name'
                         value={ attachment.name }
-                        className='flex-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+                        className='flex-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
                         onChange={ 
                           (e) => handleAttachmentChange(
                             index, 
@@ -278,7 +278,7 @@ const _ = () => {
                       />
                       <select
                         value={ attachment.type }
-                        className='block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+                        className='block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
                         onChange={ 
                           (e) => handleAttachmentChange(
                             index, 
