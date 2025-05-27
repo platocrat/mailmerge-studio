@@ -45,6 +45,7 @@ const _ = () => {
   const [processingResult, setProcessingResult] = useState<any>(null)
 
 
+  // ----------------------------- Handlers ------------------------------------
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -59,6 +60,7 @@ const _ = () => {
     )
   }
 
+
   const handleAddAttachment = () => {
     setAttachments(
       [
@@ -71,11 +73,13 @@ const _ = () => {
     )
   }
 
+
   const handleRemoveAttachment = (index: number) => {
     setAttachments(
       attachments.filter((_, i): boolean => i !== index)
     )
   }
+
 
   const handleAttachmentChange = (
     index: number, 
@@ -92,8 +96,10 @@ const _ = () => {
     setAttachments(updatedAttachments)
   }
 
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+
     setProcessingStatus('processing')
 
     try {
@@ -123,9 +129,13 @@ const _ = () => {
       }
 
       // Process webhook using our service
-      const processedEmail = postmarkService.processInboundWebhook(webhookPayload)
+      const processedEmail = postmarkService.processInboundWebhook(
+        webhookPayload
+      )
       // Process data from the email
-      const processedData = await dataProcessingService.processEmailData(processedEmail)
+      const processedData = await dataProcessingService.processEmailData(
+        processedEmail
+      )
 
       // Store result for display
       setProcessingResult(processedData)
@@ -136,6 +146,9 @@ const _ = () => {
     }
   }
 
+
+
+  // --------------------------- Render Component ------------------------------
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
       <div className='bg-white rounded-lg shadow-md overflow-hidden mb-8'>
@@ -158,7 +171,10 @@ const _ = () => {
               { `Simulate Email Submission` }
             </h2>
 
-            <form onSubmit={ handleSubmit } className='space-y-6'>
+            <form 
+              onSubmit={ handleSubmit } 
+              className='space-y-6'
+            >
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                 <div>
                   <label 

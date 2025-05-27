@@ -1,6 +1,8 @@
 // Service for handling Postmark webhook data
-import { Client } from 'postmark'
+// Externals
 import Papa from 'papaparse'
+import { Client } from 'postmark'
+
 
 export interface PostmarkAttachment {
   Name: string
@@ -44,6 +46,29 @@ export interface ProcessedInboundEmail {
   spamScore: number
 }
 
+
+// ------------------------- PostmarkService class -----------------------------
+/**
+ * Service for handling Postmark webhook data and sending emails
+ * This service processes inbound emails, extracts relevant information,
+ * parses attachments, and sends emails using the Postmark API.
+ * It also provides methods to parse CSV and JSON data from attachments.
+ * @class PostmarkService
+ * @property {Client} client - Postmark API client instance
+ * @method processInboundWebhook - Processes an inbound webhook from Postmark
+ * @method parseCSVData - Parses CSV data from a base64-encoded string
+ * @method parseJSONData - Parses JSON data from a base64-encoded string
+ * @method sendDashboardEmail - Sends an email using the Postmark API
+ * @method extractProjectId - Extracts project ID from the mailbox hash or To address
+ * @method extractCommands - Extracts commands from the subject line
+ * @method generateId - Generates a unique ID for the email
+ * @example
+ * const postmarkService = new PostmarkService();
+ * const processedEmail = postmarkService.processInboundWebhook(webhookData);
+ * const csvData = postmarkService.parseCSVData(attachmentContent);
+ * const jsonData = postmarkService.parseJSONData(attachmentContent);
+ * postmarkService.sendDashboardEmail('
+ */
 class PostmarkService {
   private client: Client
 
@@ -152,5 +177,6 @@ class PostmarkService {
     }
   }
 }
+
 
 export const postmarkService = new PostmarkService()
