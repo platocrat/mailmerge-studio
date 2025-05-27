@@ -24,3 +24,16 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Add cursor pointer to all buttons and anchor tags */
+button,
+a,
+select {
+  cursor: pointer;
+}
+
+/* Ensure the cursor pointer works even when the element is disabled */
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+}

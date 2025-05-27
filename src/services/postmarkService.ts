@@ -65,9 +65,20 @@ export interface ProcessedInboundEmail {
  * @example
  * const postmarkService = new PostmarkService();
  * const processedEmail = postmarkService.processInboundWebhook(webhookData);
- * const csvData = postmarkService.parseCSVData(attachmentContent);
- * const jsonData = postmarkService.parseJSONData(attachmentContent);
- * postmarkService.sendDashboardEmail('
+ * const csvData = postmarkService.parseCSVData(processedEmail.attachments[0].content);
+ * const jsonData = postmarkService.parseJSONData(processedEmail.attachments[0].content);
+ * // Send dashboard email
+ * postmarkService.sendDashboardEmail(
+ *   'notifications@mailmerge.studio',
+ *   'New email received',
+ *   `
+ *   <p>From: ${processedEmail.fromName} &lt;${processedEmail.fromEmail}&gt;</p>
+ *   <p>Subject: ${processedEmail.subject}</p>
+ *   <p>Commands: ${processedEmail.commands.join(', ')}</p>
+ *   <p>CSV Data: ${JSON.stringify(csvData)}</p>
+ *   <p>JSON Data: ${jsonData}</p>
+ *   `
+ * )
  */
 class PostmarkService {
   private client: Client
@@ -96,29 +107,45 @@ class PostmarkService {
       content: attachment.Content, // Base64 content
     }))
 
+    const id = this.generateId()
+    const receivedAt = new Date()
+    const fromEmail = data.From
+    const fromName = data.FromName
+    const subject = data.Subject
+    const textContent = data.TextBody
+    const htmlContent = data.HtmlBody
+    const attachments = processedAttachments
+    const spamScore = parseFloat(data.SpamScore) || 0
+
     return {
-      id: this.generateId(),
+      id,
       projectId,
-      fromEmail: data.From,
-      fromName: data.FromName,
-      subject: data.Subject,
-      textContent: data.TextBody,
-      htmlContent: data.HtmlBody,
-      attachments: processedAttachments,
-      receivedAt: new Date(),
+      fromEmail,
+      fromName,
+      subject,
+      textContent,
+      htmlContent,
+      attachments,
+      receivedAt,
       commands,
-      spamScore: parseFloat(data.SpamScore) || 0,
+      spamScore,
     }
   }
 
   // Parse CSV data from attachment
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parseCSVData(base64Content: string): any[] {
-    const decodedContent = atob(base64Content)
+    const decodedContent = Buffer.from(base64Content, 'base64').toString(
+      'utf-8',
+    )
+
+    console.log('decodedContent', decodedContent)
+
     const results = Papa.parse(decodedContent, {
       header: true,
       skipEmptyLines: true,
     })
+
     return results.data
   }
 
@@ -133,6 +160,7 @@ class PostmarkService {
   private extractProjectId(addressString: string): string {
     // Try to extract from plus addressing (abc123+projectId@inbound.postmarkapp.com)
     const plusMatch = addressString.match(/\+([^@]+)@/)
+
     if (plusMatch && plusMatch[1]) {
       return plusMatch[1]
     }
@@ -146,7 +174,9 @@ class PostmarkService {
     const commandRegex = /#([a-zA-Z0-9_]+)/g
     const matches = subject.match(commandRegex)
 
-    return matches ? matches.map((match) => match.substring(1)) : []
+    return matches 
+      ? matches.map((match): string => match.substring(1)) 
+      : []
   }
 
   // Generate a unique ID
@@ -172,7 +202,8 @@ class PostmarkService {
         MessageStream: 'outbound',
       })
     } catch (error) {
-      console.error('Error sending dashboard email:', error)
+      const errorMessage = 'Error sending dashboard email:'
+      console.error(errorMessage, error)
       throw error
     }
   }

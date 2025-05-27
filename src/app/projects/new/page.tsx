@@ -97,7 +97,7 @@ const _ = () => {
                 value={ formData.name }
                 onChange={ handleInputChange }
                 placeholder='e.g., Sales Analytics'
-                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900'
               />
             </div>
 
@@ -114,7 +114,7 @@ const _ = () => {
                 rows={ 3 }
                 value={ formData.description }
                 onChange={ handleInputChange }
-                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm'
+                className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900'
                 placeholder='Describe the purpose of this project...'
               />
             </div>

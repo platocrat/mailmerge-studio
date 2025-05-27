@@ -194,7 +194,7 @@ class DataProcessingService {
   // Get recent processed data for a project
   async getProjectData(
     projectId: string,
-    limit = 10,
+    limitCount = 10,
   ): Promise<ProcessedData[]> {
     const db = getFirestoreInstance()
 
@@ -202,7 +202,7 @@ class DataProcessingService {
       collection(db, 'processedData'),
       where('projectId', '==', projectId),
       orderBy('processedAt', 'desc'),
-      limit(limit),
+      limit(limitCount),
     )
 
     const snapshot = await getDocs(q)
