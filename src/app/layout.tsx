@@ -47,11 +47,11 @@ export default function RootLayout({
                   <Link href='/' className='text-gray-700 hover:text-blue-600 font-medium'>
                     { `Home` }
                   </Link>
-                  <Link href='/webhook-simulator' className='text-gray-700 hover:text-blue-600 font-medium'>
+                  <Link href='/send-new-email' className='text-gray-700 hover:text-blue-600 font-medium'>
                     { `Demo` }
                   </Link>
                   <a
-                    href='https://github.com/mailmerge-studio/mailmerge-studio'
+                    href='https://github.com/platocrat/mailmerge-studio'
                     target='_blank'
                     rel='noopener noreferrer'
                     className='text-gray-700 hover:text-blue-600 font-medium flex items-center'

@@ -34,8 +34,8 @@ const _ = () => {
 
       // Generate a unique project ID
       const projectId = Math.random().toString(36).substring(2, 15)
-      // Generate unique email address for the project
-      const emailAddress = `demo+${projectId}@mmstudio.inbound.postmarkapp.com`
+      // Use the single inbound server address
+      const emailAddress = `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`
 
       const projectData = {
         ...formData,

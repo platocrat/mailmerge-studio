@@ -78,7 +78,7 @@ export default function _() {
                 { `New Project` }
               </Link>
               <Link
-                href='/webhook-simulator'
+                href='/send-new-email'
                 className='inline-flex items-center px-4 py-2 border border-white rounded-md shadow-sm text-base font-medium text-white hover:bg-blue-700'
               >
                 { `Try Demo` }

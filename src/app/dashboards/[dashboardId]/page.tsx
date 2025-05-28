@@ -88,7 +88,7 @@ const _ = () => {
   }
 
   const handleSendEmail = async (to: string, subject: string, additionalMessage: string) => {
-    const htmlContent = `
+    const htmlBody = `
       <h2>${dashboard.title}</h2>
       <p>Generated on ${dashboard.processedAt.toLocaleString()}</p>
       ${additionalMessage ? `<p>${additionalMessage}</p>` : ''}
@@ -111,7 +111,7 @@ const _ = () => {
     await postmarkService.sendDashboardEmail(
       to,
       subject,
-      htmlContent
+      htmlBody
     )
   }
 

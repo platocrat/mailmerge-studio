@@ -1,16 +1,32 @@
-// src/app/webhook-simulator/page.tsx
+// src/app/send-new-email/page.tsx
 'use client'
 
 // Externals
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
 // Locals
+import { 
+  postmarkService,
+  PostmarkAttachment, 
+  PostmarkInboundWebhook, 
+} from '@/services/postmarkService'
 import DashboardPreview from '@/components/Previews/Dashboard'
+import DataVisualization from '@/components/DataViz/SampleDataViz'
 import dataProcessingService from '@/services/dataProcessingService'
-import { PostmarkInboundWebhook, postmarkService } from '@/services/postmarkService'
 
 // --------------------------------- Types -------------------------------------
-type Attachments = Array<{ name: string, type: string }>
+type Attachments = Array<{ 
+  name: string, 
+  type: string,
+  size: number,
+  file?: File 
+}>
+
+// --------------------------------Constants -----------------------------------
+// Random inbound hash for displaying in the UI
+const RANDOM_INBOUND_HASH = '2a085f662f0b4fca9e7d7a344e36583e'
+const MAX_TOTAL_SIZE_MB = 35
+const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
 
 // ------------------------------- Component -----------------------------------
 const _ = () => {
@@ -18,18 +34,14 @@ const _ = () => {
   const [
     attachments, 
     setAttachments
-  ] = useState<Attachments>(
-    [
-      { name: 'sales_data.csv', type: 'text/csv' }
-    ] 
-  )
+  ] = useState<Attachments>([])
   const [ 
     formData, 
     setFormData 
   ] = useState<Partial<PostmarkInboundWebhook>>({
     FromName: 'Demo User',
     From: 'user@example.com',
-    To: 'demo+test@mmstudio.inbound.postmarkapp.com',
+    To: `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`,
     Subject: 'Test Data #csv',
     TextBody: 'Please process the attached CSV file with sales data.',
     HtmlBody: '<p>Please process the attached CSV file with sales data.</p>',
@@ -42,6 +54,9 @@ const _ = () => {
     processingStatus, 
     setProcessingStatus
   ] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
+  const [totalSize, setTotalSize] = useState<number>(0)
+  const [sizeError, setSizeError] = useState<string>('')
+  const [isAddingAttachment, setIsAddingAttachment] = useState<boolean>(false)
   const [processingResult, setProcessingResult] = useState<any>(null)
 
 
@@ -62,22 +77,54 @@ const _ = () => {
 
 
   const handleAddAttachment = () => {
-    setAttachments(
-      [
-        ...attachments, 
-        { 
-          name: `attachment_${ attachments.length + 1 }.csv`, 
-          type: 'text/csv' 
+    setIsAddingAttachment(true)
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.csv,.json,image/*'
+    
+    fileInput.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement
+      if (target.files && target.files[0]) {
+        const file = target.files[0]
+        const newSize = totalSize + file.size
+        
+        if (newSize > MAX_TOTAL_SIZE_BYTES) {
+          setSizeError(`Total attachment size cannot exceed ${MAX_TOTAL_SIZE_MB}MB`)
+          setIsAddingAttachment(false)
+          return
         }
-      ]
-    )
+        
+        setSizeError('')
+        setTotalSize(newSize)
+        setAttachments([
+          ...attachments,
+          {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            file: file
+          }
+        ])
+      }
+      setIsAddingAttachment(false)
+    }
+
+    fileInput.oncancel = () => {
+      setIsAddingAttachment(false)
+    }
+    
+    fileInput.click()
   }
 
 
   const handleRemoveAttachment = (index: number) => {
+    const removedAttachment = attachments[index]
+
+    setTotalSize(totalSize - removedAttachment.size)
     setAttachments(
       attachments.filter((_, i): boolean => i !== index)
     )
+    setSizeError('')
   }
 
 
@@ -87,16 +134,15 @@ const _ = () => {
     value: string
   ) => {
     const updatedAttachments = [ ...attachments ]
-    
-    updatedAttachments[ index ] = { 
+
+    updatedAttachments[index] = { 
       ...updatedAttachments[index], 
       [field]: value 
     }
-    
     setAttachments(updatedAttachments)
   }
 
-
+  
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
@@ -104,46 +150,106 @@ const _ = () => {
 
     try {
       // Convert attachments to Postmark format
-      const postmarkAttachments = attachments.map(
-        attachment => (
-          {
-            Name: attachment.name,
-            // Base64 mock content
-            Content: 'VGhpcyBpcyBhIGZha2UgY3N2IGZpbGUgY29udGVudCBmb3IgZGVtbyBwdXJwb3Nlcw==',
-            ContentType: attachment.type,
-            ContentLength: 1024, // Mock size
+      const postmarkAttachments = await Promise.all(
+        attachments.map(
+          async (
+            attachment: Attachments[number]
+          ): Promise<PostmarkAttachment> => {
+            // Read file content as base64
+            const content = await new Promise<string>((resolve) => {
+              const reader = new FileReader()
+
+              reader.onload = () => {
+                const base64 = reader.result as string
+                // Remove data URL prefix (e.g. "data:application/csv;base64,")
+                resolve(base64.split(',')[1])
+              }
+
+              reader.readAsDataURL(attachment.file!)
+            })
+
+            return {
+              Name: attachment.name,
+              Content: content,
+              ContentType: attachment.type,
+              ContentLength: attachment.size,
+            }
           }
         )
       )
 
-      // Create webhook payload
-      const webhookPayload: PostmarkInboundWebhook = {
-        ...formData as PostmarkInboundWebhook,
-        Attachments: postmarkAttachments,
-        Headers: [
-          { 
-            Name: 'X-Spam-Score', 
-            Value: formData.SpamScore || '0' 
-          }
-        ],
+      // Send email using our API route
+      const sendEmailResponse = await fetch('/api/postmark/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          From: formData.From,
+          To: formData.To,
+          Subject: formData.Subject,
+          TextBody: formData.TextBody,
+          HtmlBody: formData.HtmlBody,
+          Attachments: postmarkAttachments
+        })
+      })
+
+      if (!sendEmailResponse.ok) {
+        throw new Error('Failed to send email')
       }
 
-      // Process webhook using our service
-      const processedEmail = postmarkService.processInboundWebhook(
-        webhookPayload
-      )
-      // Process data from the email
-      const processedData = await dataProcessingService.processEmailData(
-        processedEmail
-      )
+      const sendEmailResult = await sendEmailResponse.json()
 
-      // Store result for display
-      setProcessingResult(processedData)
+      // Process the webhook response
+      const webhookResponse = await fetch('/api/postmark/webhook/inbound', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          From: formData.From,
+          FromName: formData.FromName,
+          To: formData.To,
+          Subject: formData.Subject,
+          TextBody: formData.TextBody,
+          HtmlBody: formData.HtmlBody,
+          MailboxHash: 'test',
+          Attachments: postmarkAttachments,
+          SpamScore: formData.SpamScore,
+          MessageID: sendEmailResult.messageId,
+          Date: new Date().toISOString(),
+          Headers: [
+            {
+              Name: 'X-Spam-Score',
+              Value: formData.SpamScore
+            }
+          ]
+        })
+      })
+
+      if (!webhookResponse.ok) {
+        throw new Error('Failed to process webhook')
+      }
+
+      const webhookData = await webhookResponse.json()
+      
       setProcessingStatus('success')
+      setProcessingResult(webhookData.data)
     } catch (error) {
-      console.error('Error processing webhook:', error)
+      console.error('Error sending email:', error)
       setProcessingStatus('error')
     }
+  }
+
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes'
+
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
 
@@ -154,10 +260,10 @@ const _ = () => {
       <div className='bg-white rounded-lg shadow-md overflow-hidden mb-8'>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4'>
           <h1 className='text-2xl font-bold text-white'>
-            { `Webhook Simulator` }
+            { `Demo` }
           </h1>
           <p className='text-blue-100 mt-1'>
-            { `Test the email processing functionality by simulating a Postmark inbound webhook` }
+            { `Test the email processing functionality by sending a new email to MailMerge Studio` }
           </p>
         </div>
       </div>
@@ -168,7 +274,7 @@ const _ = () => {
           <div className='p-6'>
             <h2 className='text-lg font-medium text-gray-900 mb-4'>
               <Mail className='inline-block h-5 w-5 mr-2 text-blue-600' />
-              { `Simulate Email Submission` }
+              { `Send New Email to MailMerge Studio` }
             </h2>
 
             <form 
@@ -211,7 +317,7 @@ const _ = () => {
                 </div>
               </div>
 
-              <div>
+              {/* <div>
                 <label 
                   htmlFor='To' 
                   className='block text-sm font-medium text-gray-700'
@@ -227,9 +333,9 @@ const _ = () => {
                   className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
                 />
                 <p className='mt-1 text-xs text-gray-500'>
-                  { `Format: demo+projectId@mmstudio.inbound.postmarkapp.com` }
+                  { `Format: ${ RANDOM_INBOUND_HASH }@inbound.postmarkapp.com` }
                 </p>
-              </div>
+              </div> */}
 
               <div>
                 <label 
@@ -278,35 +384,15 @@ const _ = () => {
                       key={ index } 
                       className='flex items-center space-x-2'
                     >
-                      <FileText className='h-5 w-5 text-gray-400 v' />
-                      <input
-                        type='text'
-                        placeholder='File name'
-                        value={ attachment.name }
-                        className='flex-1 block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
-                        onChange={ 
-                          (e) => handleAttachmentChange(
-                            index, 
-                            'name', 
-                            e.target.value
-                          )
-                        }
-                      />
-                      <select
-                        value={ attachment.type }
-                        className='block rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
-                        onChange={ 
-                          (e) => handleAttachmentChange(
-                            index, 
-                            'type', 
-                            e.target.value
-                          ) 
-                        }
-                      >
-                        <option value='text/csv'>CSV</option>
-                        <option value='application/json'>JSON</option>
-                        <option value='image/png'>Image</option>
-                      </select>
+                      <FileText className='h-5 w-5 text-gray-400' />
+                      <div className='flex-1'>
+                        <div className='text-sm text-gray-900'>
+                          { attachment.name }
+                        </div>
+                        <div className='text-xs text-gray-500'>
+                          { formatFileSize(attachment.size) }
+                        </div>
+                      </div>
                       <button
                         type='button'
                         onClick={ () => handleRemoveAttachment(index) }
@@ -316,13 +402,53 @@ const _ = () => {
                       </button>
                     </div>
                   )) }
+                  { sizeError && (
+                    <div className='text-sm text-red-600 mt-2'>
+                      { sizeError }
+                    </div>
+                  )}
+                  <div className='text-sm text-gray-500 mt-2'>
+                    { `Total size: ${ formatFileSize(totalSize) } / ${ MAX_TOTAL_SIZE_MB }MB` }
+                  </div>
                   <button
                     type='button'
                     onClick={ handleAddAttachment }
-                    className='inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                    disabled={ isAddingAttachment }
+                    className={`
+                      inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+                      ${isAddingAttachment ? 'opacity-75 cursor-not-allowed' : ''}
+                    `}
                   >
-                    <Plus className='h-4 w-4 mr-1.5' />
-                    { `Add Attachment` }
+                    { isAddingAttachment ? (
+                      <>
+                        <svg 
+                          className='animate-spin -ml-1 mr-2 h-4 w-4 text-gray-700' 
+                          xmlns='http://www.w3.org/2000/svg' 
+                          fill='none' 
+                          viewBox='0 0 24 24'
+                        >
+                          <circle 
+                            className='opacity-25' 
+                            cx='12' 
+                            cy='12' 
+                            r='10' 
+                            stroke='currentColor' 
+                            strokeWidth='4'
+                          />
+                          <path 
+                            className='opacity-75' 
+                            fill='currentColor' 
+                            d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                          />
+                        </svg>
+                        { `Adding Attachment...` }
+                      </>
+                    ) : (
+                      <>
+                        <Plus className='h-4 w-4 mr-1.5' />
+                        { `Add Attachment` }
+                      </>
+                    ) }
                   </button>
                 </div>
               </div>
@@ -467,7 +593,71 @@ const _ = () => {
                   </p>
                 </div>
 
-                <DashboardPreview data={ processingResult } showControls={ false } />
+                <div className='space-y-6'>
+                  {/* Summary Section */}
+                  <div className='bg-white rounded-lg shadow p-4'>
+                    <h4 className='text-md font-medium text-gray-900 mb-3'>
+                      { `Summary` }
+                    </h4>
+                    <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
+                      { Object.entries(
+                        processingResult.summary
+                      ).map(([key, value]) => (
+                        <div key={key} className='bg-gray-50 p-3 rounded'>
+                          <div className='text-sm text-gray-500'>
+                            {key}
+                          </div>
+                          <div className='text-lg font-semibold'>
+                            {String(value)}
+                          </div>
+                        </div>
+                      )) }
+                    </div>
+                  </div>
+
+                  {/* Chart Section */}
+                  { processingResult.chartData && (
+                    <div className='bg-white rounded-lg shadow p-4'>
+                      <h4 className='text-md font-medium text-gray-900 mb-3'>
+                        { `Data Visualization` }
+                      </h4>
+                      <DataVisualization 
+                        chartData={processingResult.chartData} 
+                      />
+                    </div>
+                  )}
+
+                  {/* Attachments Section */}
+                  { processingResult.attachmentUrls && 
+                    processingResult.attachmentUrls.length > 0 && (
+                    <div className='bg-white rounded-lg shadow p-4'>
+                      <h4 className='text-md font-medium text-gray-900 mb-3'>
+                        { `Processed Attachments` }
+                      </h4>
+                      <div className='space-y-2'>
+                        { processingResult.attachmentUrls.map((
+                          url: string, 
+                          index: number
+                        ) => (
+                          <div 
+                            key={index} 
+                            className='flex items-center space-x-2'
+                          >
+                            <FileText className='h-5 w-5 text-gray-400' />
+                            <a 
+                              href={url} 
+                              target='_blank' 
+                              rel='noopener noreferrer'
+                              className='text-blue-600 hover:text-blue-800'
+                            >
+                              { url.split('/').pop() }
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) }
           </div>

@@ -1,3 +1,4 @@
+// Externals
 import {
   collection,
   addDoc,
@@ -9,8 +10,9 @@ import {
   updateDoc,
   doc,
 } from 'firebase/firestore'
-import { getFirestoreInstance } from './firebase'
+// Locals
 import { r2Service } from './r2Service'
+import { getFirestoreInstance } from './firebase'
 import { ProcessedInboundEmail, PostmarkAttachment } from './postmarkService'
 
 // Data processing types
@@ -43,6 +45,7 @@ class DataProcessingService {
 
     if (!projectSnapshot.empty) {
       const projectDoc = projectSnapshot.docs[0]
+
       await updateDoc(doc(db, 'projects', projectDoc.id), {
         status: 'active',
         emailCount: (projectDoc.data().emailCount || 0) + 1,

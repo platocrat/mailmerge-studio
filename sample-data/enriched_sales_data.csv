@@ -1,0 +1,9 @@
+ID,Date,Quarter,Region,Manager,Sales ($),Products Sold,Top Product,New Customers,Repeat Customers
+S001,2025-01-05,Q1,North,Alice Jennings,65000,245,Analytics Pro,34,89
+S002,2025-01-12,Q1,South,Marco Alvarez,84000,312,Data Wrangler,58,110
+S003,2025-01-19,Q1,East,Grace Lee,56000,198,Insight Tracker,22,76
+S004,2025-01-26,Q1,West,Jordan Rivera,119528,529,Report Builder,81,145
+S005,2025-02-02,Q1,North,Alice Jennings,61300,231,Analytics Pro,31,93
+S006,2025-02-09,Q1,South,Marco Alvarez,82100,307,Data Wrangler,50,116
+S007,2025-02-16,Q1,East,Grace Lee,59450,215,Insight Tracker,24,79
+S008,2025-02-23,Q1,West,Jordan Rivera,122640,538,Report Builder,89,151

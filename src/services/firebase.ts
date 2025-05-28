@@ -1,5 +1,7 @@
+// Externals
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+
 
 // Your Firebase configuration
 // Note: In a production app, these would be in environment variables
@@ -28,6 +30,7 @@ export const initializeFirebase = () => {
       firestore = getFirestore(firebaseApp)
       console.log('Firebase initialized successfully')
     }
+
     return { firebaseApp, firestore }
   } catch (error) {
     console.error('Error initializing Firebase:', error)
@@ -40,6 +43,7 @@ export const getFirestoreInstance = () => {
     const { firestore: db } = initializeFirebase()
     return db
   }
+
   return firestore
 }
 

@@ -47,13 +47,13 @@ Project Pitch: **MailMerge Studio – Accessible, Low-Code Data Visualizer Dri
 
 | Postmark capability                                                                     | How MailMerge Studio uses it                                                                                                |
 | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| **Inbound address & plus‑addressing hash** (`abc123+projectId@inbound.postmarkapp.com`) | Routes email to the correct workspace; allows unlimited projects on one server (Source: [Postmark Developer User-Guide: Sample Inbound Workflow](https://postmarkapp.com/developer/user-guide/inbound/sample-inbound-workflow))                        |
-| **Inbound webhook JSON**                                                                | Parses `TextBody`, `HtmlBody`, `Attachments[]`, `Headers[]`, and spam score to feed our ETL queue (Source: [Postmark Developer Documentation: Inbound webhook](https://postmarkapp.com/developer/webhooks/inbound-webhook))     |
-| **SpamAssassin headers**                                                                | Auto‑drops obvious junk; raises integrity score for judging criteria (Source: [Postmark Developer Documentation: Inbound webhook](https://postmarkapp.com/developer/webhooks/inbound-webhook))                                  |
-| **MailboxHash** + webhook retry logic                                                   | Guarantees idempotent processing and easy threading of follow‑up emails (Source: [Postmark Developer User-Guide: Sample Inbound Workflow](https://postmarkapp.com/developer/user-guide/inbound/sample-inbound-workflow))                               |
-| **Single server, dual streams**                                                         | One **inbound** stream for capture, one **outbound** stream for sending HTML dashboards back to users (Source: [Postmark Developer User-Guide: Configure an inbound server](https://postmarkapp.com/developer/user-guide/inbound/configure-an-inbound-server)) |
+| **Inbound address** (`POSTMARK_INBOUND_HASH@inbound.postmarkapp.com`) | Single inbound server for all email processing (Source: [Postmark Developer User-Guide: Sample Inbound Workflow](https://postmarkapp.com/developer/user-guide/inbound/sample-inbound-workflow))                        |
+| **Inbound webhook JSON**                                                                | Parses `TextBody`, `HtmlBody`, `Attachments[]`, `Headers[]`, and spam score to feed our ETL queue (Source: [Postmark Developer Documentation: Inbound webhook](https://postmarkapp.com/developer/webhooks/inbound-webhook))     |
+| **SpamAssassin headers**                                                                | Auto‑drops obvious junk; raises integrity score for judging criteria (Source: [Postmark Developer Documentation: Inbound webhook](https://postmarkapp.com/developer/webhooks/inbound-webhook))                                  |
+| **MailboxHash** + webhook retry logic                                                   | Guarantees idempotent processing and easy threading of follow‑up emails (Source: [Postmark Developer User-Guide: Sample Inbound Workflow](https://postmarkapp.com/developer/user-guide/inbound/sample-inbound-workflow))                               |
+| **Single server, dual streams**                                                         | One **inbound** stream for capture, one **outbound** stream for sending HTML dashboards back to users (Source: [Postmark Developer User-Guide: Configure an inbound server](https://postmarkapp.com/developer/user-guide/inbound/configure-an-inbound-server)) |
 
-The project therefore scores highly for **“Utilization of Postmark features.”**
+The project therefore scores highly for **"Utilization of Postmark features."**
 
 ---
 
@@ -61,7 +61,7 @@ The project therefore scores highly for **“Utilization of Postmark features.�
 
 1. **Create project**
 
-   - Visit `app.mailmerge.studio/projects/new` (or reply “NEW {ProjectName}”).
+   - Visit `app.mailmerge.studio/projects/new` (or reply "NEW {ProjectName}").
    - Receive a confirmation email containing your dedicated inbound address.
 
 2. **Send data**
@@ -80,11 +80,11 @@ The project therefore scores highly for **“Utilization of Postmark features.�
 
      - Key metrics cards
      - An embedded bar/line chart image (for clients that block JS)
-     - A “View live dashboard” link (fully WCAG 2.1 AA).
+     - A "View live dashboard" link (fully WCAG 2.1 AA).
 
 5. **Iterate by email**
 
-   - Reply “FILTER last 30d” or attach an updated CSV—MailMerge Studio re‑renders and replies.
+   - Reply "FILTER last 30d" or attach an updated CSV—MailMerge Studio re‑renders and replies.
 
 ---
 
@@ -101,11 +101,11 @@ The project therefore scores highly for **“Utilization of Postmark features.�
 
 | Persona             | Credential / Steps                                                                                                                                                                                |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Judge**           | 1) Send any email (or attachment) to **[demo+judges@mmstudio.inbound.postmarkapp.com](mailto:demo+judges@mmstudio.inbound.postmarkapp.com)**.<br>2) Within \~15 s you’ll receive a metrics email. |
+| **Judge**           | 1) Send any email (or attachment) to **[POSTMARK_INBOUND_HASH@inbound.postmarkapp.com](mailto:POSTMARK_INBOUND_HASH@inbound.postmarkapp.com)**.<br>2) Within \~15 s you'll receive a metrics email. |
 | **Low‑vision user** | Same as above; open in high‑contrast mode to verify accessibility.                                                                                                                                |
 | **Developer**       | cURL simulation:<br>`curl -X POST "https://demo.mailmerge.studio/webhooks/inbound" -H "Content-Type: application/json" -d '@sample-inbound.json'` (sample file attached in repo).                 |
 
-No login is required; all demo data auto‑purges after 24 h.
+No login is required; all demo data auto‑purges after 24 s.
 
 ---
 
@@ -114,7 +114,7 @@ No login is required; all demo data auto‑purges after 24 h.
 1. **Configure Postmark**
 
    - Create a server → enable *Inbound* stream and copy `InboundHash`.
-   - Set `InboundHookUrl` to `https://demo.mailmerge.studio/webhooks/inbound`. (Source: [Postmark Developer User-Guide: Configure an inbound server](https://postmarkapp.com/developer/user-guide/inbound/configure-an-inbound-server))
+   - Set `InboundHookUrl` to `https://demo.mailmerge.studio/webhooks/inbound`. (Source: [Postmark Developer User-Guide: Configure an inbound server](https://postmarkapp.com/developer/user-guide/inbound/configure-an-inbound-server))
 
 2. **Security**
 
@@ -125,9 +125,9 @@ No login is required; all demo data auto‑purges after 24 h.
 
    - Next.js (API routes) + Prisma + SQLite (demo)
    - D3 & `@vercel/og` for server‑rendered chart images (no client JS needed).
-   - AWS S3 for attachment storage; Amazon SES is *not* required thanks to Postmark outbound API.
+   - AWS S3 for attachment storage; Amazon SES is *not* required thanks to Postmark outbound API.
 
-4. **Rate & size limits** (≤ 10 MB per email; attachments filtered as per Postmark’s forbidden types list). (Source: [Postmark Developer User-Guide: Sending an email with API](https://postmarkapp.com/developer/user-guide/send-email-with-api))
+4. **Rate & size limits** (≤ 10 MB per email; attachments filtered as per Postmark's forbidden types list). (Source: [Postmark Developer User-Guide: Sending an email with API](https://postmarkapp.com/developer/user-guide/send-email-with-api))
 
 ---
 
@@ -140,7 +140,7 @@ No login is required; all demo data auto‑purges after 24 h.
 
 ---
 
-**MailMerge Studio** proves you can build a fully‑featured, inclusive data product with nothing but Postmark’s inbound email parsing and a bit of imagination.
+**MailMerge Studio** proves you can build a fully‑featured, inclusive data product with nothing but Postmark's inbound email parsing and a bit of imagination.
 
 ## 3. Features
 

@@ -41,7 +41,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
   }
 
   const handleSendEmail = async (to: string, subject: string, additionalMessage: string) => {
-    const htmlContent = `
+    const htmlBody = `
       <h2>Dashboard: ${data.projectId}</h2>
       <p>Generated on ${formatDate(data.processedAt)}</p>
       ${additionalMessage ? `<p>${additionalMessage}</p>` : ''}
@@ -60,7 +60,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     await postmarkService.sendDashboardEmail(
       to,
       subject,
-      htmlContent
+      htmlBody
     )
   }
 

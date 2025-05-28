@@ -1,7 +1,7 @@
 // Service for handling Postmark webhook data
 // Externals
 import Papa from 'papaparse'
-import { Client } from 'postmark'
+import { Client, Message, Attachment } from 'postmark'
 
 
 export interface PostmarkAttachment {
@@ -9,20 +9,30 @@ export interface PostmarkAttachment {
   Content: string // Base64-encoded content
   ContentType: string
   ContentLength: number
+  ContentID?: string | null
 }
 
 export interface PostmarkInboundWebhook {
+  MessageId: string
+  ReplyTo: string
+  OriginalRecipient: string
+  MessageStream: string
   FromName: string
   From: string
   To: string
+  ToFull: { Email: string; Name: string; MailboxHash: string }[][]
+  Cc: string
+  CcFull: { Email: string; Name: string; MailboxHash: string }[]
+  Bcc: string
+  BccFull: { Email: string; Name: string; MailboxHash: string }[]
   Subject: string
   TextBody: string
   HtmlBody: string
   MailboxHash: string
   Tag: string
   StrippedTextReply: string
-  Headers: Array<{ Name: string; Value: string }>
-  Attachments: Array<PostmarkAttachment>
+  Headers: { Name: string; Value: string }[]
+  Attachments: PostmarkAttachment[]
   SpamScore: string
 }
 
@@ -33,7 +43,7 @@ export interface ProcessedInboundEmail {
   fromName: string
   subject: string
   textContent: string
-  htmlContent: string
+  htmlBody: string
   attachments: Array<{
     name: string
     type: string
@@ -91,8 +101,7 @@ class PostmarkService {
 
   // Process an inbound webhook from Postmark
   processInboundWebhook(data: PostmarkInboundWebhook): ProcessedInboundEmail {
-    // Extract project ID from the MailboxHash
-    // Format: abc123+projectId@inbound.postmarkapp.com
+    // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
     const projectId = this.extractProjectId(data.MailboxHash || data.To)
 
     // Extract commands from subject line
@@ -104,16 +113,17 @@ class PostmarkService {
       name: attachment.Name,
       type: attachment.ContentType,
       size: attachment.ContentLength,
-      content: attachment.Content, // Base64 content
+      content: attachment.Content, // Base64 content,
+      contentId: attachment.ContentID
     }))
 
-    const id = this.generateId()
+    const id = data.MessageId
     const receivedAt = new Date()
     const fromEmail = data.From
     const fromName = data.FromName
     const subject = data.Subject
     const textContent = data.TextBody
-    const htmlContent = data.HtmlBody
+    const htmlBody = data.HtmlBody
     const attachments = processedAttachments
     const spamScore = parseFloat(data.SpamScore) || 0
 
@@ -124,7 +134,7 @@ class PostmarkService {
       fromName,
       subject,
       textContent,
-      htmlContent,
+      htmlBody,
       attachments,
       receivedAt,
       commands,
@@ -158,14 +168,7 @@ class PostmarkService {
 
   // Extract project ID from mailbox hash or To address
   private extractProjectId(addressString: string): string {
-    // Try to extract from plus addressing (abc123+projectId@inbound.postmarkapp.com)
-    const plusMatch = addressString.match(/\+([^@]+)@/)
-
-    if (plusMatch && plusMatch[1]) {
-      return plusMatch[1]
-    }
-
-    // Default project ID if none found
+    // Default project ID since we're using a single inbound server
     return 'default'
   }
 
@@ -179,31 +182,65 @@ class PostmarkService {
       : []
   }
 
-  // Generate a unique ID
-  private generateId(): string {
-    return (
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15)
-    )
-  }
-
   // Send dashboard email
   async sendDashboardEmail(
     to: string,
     subject: string,
-    htmlContent: string,
+    htmlBody: string,
   ): Promise<void> {
+    const fromEmail = process.env.POSTMARK_FROM_EMAIL || 'support@mailmerge.studio'
+
     try {
       await this.client.sendEmail({
-        From: 'notifications@mailmerge.studio',
+        From: fromEmail,
         To: to,
         Subject: subject,
-        HtmlBody: htmlContent,
+        HtmlBody: htmlBody,
         MessageStream: 'outbound',
       })
     } catch (error) {
       const errorMessage = 'Error sending dashboard email:'
       console.error(errorMessage, error)
+      throw error
+    }
+  }
+
+  // Send email with attachments
+  async sendEmail(
+    params: {
+      From: string
+      To: string
+      Subject: string
+      TextBody?: string
+      HtmlBody?: string
+      Attachments?: PostmarkAttachment[]
+      MessageStream?: string
+    }
+  ): Promise<{ 
+    ErrorCode: number
+    Message: string
+    MessageID: string
+    SubmittedAt: string
+  }> {
+    try {
+      const message: Message = {
+        From: params.From,
+        To: params.To,
+        Subject: params.Subject,
+        TextBody: params.TextBody,
+        HtmlBody: params.HtmlBody,
+        Attachments: params.Attachments?.map(att => ({
+          Name: att.Name,
+          Content: att.Content,
+          ContentType: att.ContentType,
+          ContentLength: att.ContentLength,
+          ContentID: att.ContentID || null
+        })),
+        MessageStream: params.MessageStream || 'outbound'
+      }
+      return await this.client.sendEmail(message)
+    } catch (error) {
+      console.error('Error sending email:', error)
       throw error
     }
   }

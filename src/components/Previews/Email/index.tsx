@@ -140,7 +140,9 @@ const EmailPreview: React.FC<EmailPreviewProps> = ({ email }) => {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-2xl max-w-sm w-full">
             <div className="flex justify-between items-center p-4 border-b">
-              <h3 className="text-lg font-medium text-gray-900">Download Attachment</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                { `Download Attachment` }
+              </h3>
             </div>
             <div className="p-6">
               <p className="text-gray-700 mb-4">
