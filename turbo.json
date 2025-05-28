@@ -1,5 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "package.json",
+    "package-lock.json",
+    ".env"
+  ],
   "tasks": {
     "build": {
       "dependsOn": [
@@ -8,6 +13,10 @@
       "outputs": [
         ".next/**",
         "!.next/cache/**"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
       ]
     },
     "test": {
