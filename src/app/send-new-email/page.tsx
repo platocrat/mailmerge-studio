@@ -5,14 +5,11 @@
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
 // Locals
-import { 
-  postmarkService,
+import {
   PostmarkAttachment, 
   PostmarkInboundWebhook, 
 } from '@/services/postmarkService'
-import DashboardPreview from '@/components/Previews/Dashboard'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
-import dataProcessingService from '@/services/dataProcessingService'
 
 // --------------------------------- Types -------------------------------------
 type Attachments = Array<{ 
@@ -199,12 +196,16 @@ const _ = () => {
       }
 
       const sendEmailResult = await sendEmailResponse.json()
+      console.log('sendEmailResult: ', sendEmailResult)
+
+      const postmarkServerToken = process.env.POSTMARK_SERVER_TOKEN || 'POSTMARK_API_TEST'
 
       // Process the webhook response
       const webhookResponse = await fetch('/api/postmark/webhook/inbound', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Postmark-Server-Token': postmarkServerToken,
         },
         body: JSON.stringify({
           From: formData.From,

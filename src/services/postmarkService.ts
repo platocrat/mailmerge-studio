@@ -191,17 +191,19 @@ class PostmarkService {
     const fromEmail = process.env.POSTMARK_FROM_EMAIL || 'support@mailmerge.studio'
 
     try {
-      await this.client.sendEmail({
+      const email: Message = {
         From: fromEmail,
         To: to,
         Subject: subject,
         HtmlBody: htmlBody,
         MessageStream: 'outbound',
-      })
+      }
+
+      await this.client.sendEmail(email)
     } catch (error) {
-      const errorMessage = 'Error sending dashboard email:'
+      const errorMessage = 'Error sending dashboard email: '
       console.error(errorMessage, error)
-      throw error
+      throw new Error(error as string)
     }
   }
 
@@ -223,25 +225,30 @@ class PostmarkService {
     SubmittedAt: string
   }> {
     try {
+      const attachments = params.Attachments?.map((
+        attachment: PostmarkAttachment
+      ): Attachment => ({
+        Name: attachment.Name,
+        Content: attachment.Content,
+        ContentType: attachment.ContentType,
+        ContentLength: attachment.ContentLength,
+        ContentID: attachment.ContentID || null
+      }))
+
       const message: Message = {
         From: params.From,
         To: params.To,
         Subject: params.Subject,
         TextBody: params.TextBody,
         HtmlBody: params.HtmlBody,
-        Attachments: params.Attachments?.map(att => ({
-          Name: att.Name,
-          Content: att.Content,
-          ContentType: att.ContentType,
-          ContentLength: att.ContentLength,
-          ContentID: att.ContentID || null
-        })),
+        Attachments: attachments,
         MessageStream: params.MessageStream || 'outbound'
       }
+
       return await this.client.sendEmail(message)
     } catch (error) {
-      console.error('Error sending email:', error)
-      throw error
+      console.error('Error sending email: ', error)
+      throw new Error(error as string)
     }
   }
 }

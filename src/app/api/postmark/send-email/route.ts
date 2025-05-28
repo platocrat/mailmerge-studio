@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         TextBody: emailData.TextBody,
         HtmlBody: emailData.HtmlBody,
         Attachments: emailData.Attachments,
-        MessageStream: 'inbound'
+        MessageStream: 'outbound'
       }
 
       const response = await postmarkService.sendEmail(params)
