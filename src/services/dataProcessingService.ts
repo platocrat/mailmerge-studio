@@ -29,7 +29,9 @@ export interface ProcessedData {
 
 class DataProcessingService {
   // Process data from an email
-  async processEmailData(email: ProcessedInboundEmail): Promise<ProcessedData> {
+  async processEmailData(
+    email: ProcessedInboundEmail
+  ): Promise<ProcessedData> {
     const db = getFirestoreInstance()
 
     // Store the email in Firestore

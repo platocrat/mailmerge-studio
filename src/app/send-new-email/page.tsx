@@ -7,7 +7,7 @@ import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
 // Locals
 import {
   PostmarkAttachment, 
-  PostmarkInboundWebhook, 
+  PostmarkInboundWebhookData, 
 } from '@/services/postmarkService'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
 
@@ -35,7 +35,7 @@ const _ = () => {
   const [ 
     formData, 
     setFormData 
-  ] = useState<Partial<PostmarkInboundWebhook>>({
+  ] = useState<Partial<PostmarkInboundWebhookData>>({
     FromName: 'Demo User',
     From: 'user@example.com',
     To: `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`,
@@ -63,7 +63,7 @@ const _ = () => {
   ) => {
     const { name, value } = e.target
     setFormData(
-      (prev: Partial<PostmarkInboundWebhook>) => (
+      (prev: Partial<PostmarkInboundWebhookData>) => (
         { 
           ...prev, 
           [name]: value 
@@ -198,14 +198,14 @@ const _ = () => {
       const sendEmailResult = await sendEmailResponse.json()
       console.log('sendEmailResult: ', sendEmailResult)
 
-      const postmarkServerToken = process.env.POSTMARK_SERVER_TOKEN || 'POSTMARK_API_TEST'
+      // const postmarkServerToken = process.env.NEXT_PUBLIC_POSTMARK_SERVER_TOKEN || 'POSTMARK_API_TEST'
 
       // Process the webhook response
       const webhookResponse = await fetch('/api/postmark/webhook/inbound', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Postmark-Server-Token': postmarkServerToken,
+          // 'X-Postmark-Server-Token': postmarkServerToken,
         },
         body: JSON.stringify({
           From: formData.From,

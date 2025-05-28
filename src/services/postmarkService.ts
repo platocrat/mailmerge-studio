@@ -12,28 +12,19 @@ export interface PostmarkAttachment {
   ContentID?: string | null
 }
 
-export interface PostmarkInboundWebhook {
-  MessageId: string
-  ReplyTo: string
-  OriginalRecipient: string
-  MessageStream: string
-  FromName: string
+export interface PostmarkInboundWebhookData {
   From: string
+  FromName: string
   To: string
-  ToFull: { Email: string; Name: string; MailboxHash: string }[][]
-  Cc: string
-  CcFull: { Email: string; Name: string; MailboxHash: string }[]
-  Bcc: string
-  BccFull: { Email: string; Name: string; MailboxHash: string }[]
   Subject: string
   TextBody: string
   HtmlBody: string
   MailboxHash: string
-  Tag: string
-  StrippedTextReply: string
-  Headers: { Name: string; Value: string }[]
   Attachments: PostmarkAttachment[]
   SpamScore: string
+  MessageID: string
+  Date: string
+  Headers: { Name: string; Value: string }[]
 }
 
 export interface ProcessedInboundEmail {
@@ -51,7 +42,7 @@ export interface ProcessedInboundEmail {
     content?: string
     url?: string
   }>
-  receivedAt: Date
+  receivedAt: string
   commands: string[]
   spamScore: number
 }
@@ -65,7 +56,7 @@ export interface ProcessedInboundEmail {
  * It also provides methods to parse CSV and JSON data from attachments.
  * @class PostmarkService
  * @property {Client} client - Postmark API client instance
- * @method processInboundWebhook - Processes an inbound webhook from Postmark
+ * @method processInboundWebhookData - Processes inbound webhook JSON data from Postmark
  * @method parseCSVData - Parses CSV data from a base64-encoded string
  * @method parseJSONData - Parses JSON data from a base64-encoded string
  * @method sendDashboardEmail - Sends an email using the Postmark API
@@ -100,16 +91,16 @@ class PostmarkService {
   }
 
   // Process an inbound webhook from Postmark
-  processInboundWebhook(data: PostmarkInboundWebhook): ProcessedInboundEmail {
+  processInboundWebhookData(json: PostmarkInboundWebhookData): ProcessedInboundEmail {
     // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
-    const projectId = this.extractProjectId(data.MailboxHash || data.To)
+    const projectId = this.extractProjectId(json.MailboxHash || json.To)
 
     // Extract commands from subject line
     // Format: Subject line #command1 #command2
-    const commands = this.extractCommands(data.Subject)
+    const commands = this.extractCommands(json.Subject)
 
     // Process attachments
-    const processedAttachments = data.Attachments.map((attachment) => ({
+    const processedAttachments = json.Attachments.map((attachment) => ({
       name: attachment.Name,
       type: attachment.ContentType,
       size: attachment.ContentLength,
@@ -117,15 +108,16 @@ class PostmarkService {
       contentId: attachment.ContentID
     }))
 
-    const id = data.MessageId
-    const receivedAt = new Date()
-    const fromEmail = data.From
-    const fromName = data.FromName
-    const subject = data.Subject
-    const textContent = data.TextBody
-    const htmlBody = data.HtmlBody
+    const id = json.MessageID
+    // Date is a UTC string. Example: 2025-05-28T20:05:55.478Z
+    const receivedAt = new Date(json.Date).toISOString()
+    const fromEmail = json.From
+    const fromName = json.FromName
+    const subject = json.Subject
+    const textContent = json.TextBody
+    const htmlBody = json.HtmlBody
     const attachments = processedAttachments
-    const spamScore = parseFloat(data.SpamScore) || 0
+    const spamScore = parseFloat(json.SpamScore) || 0
 
     return {
       id,
@@ -196,7 +188,7 @@ class PostmarkService {
         To: to,
         Subject: subject,
         HtmlBody: htmlBody,
-        MessageStream: 'outbound',
+        MessageStream: 'inbound',
       }
 
       await this.client.sendEmail(email)
@@ -242,7 +234,7 @@ class PostmarkService {
         TextBody: params.TextBody,
         HtmlBody: params.HtmlBody,
         Attachments: attachments,
-        MessageStream: params.MessageStream || 'outbound'
+        MessageStream: params.MessageStream || 'inbound'
       }
 
       return await this.client.sendEmail(message)

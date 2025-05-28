@@ -171,11 +171,14 @@ npm run dev
 ## 5. Project Structure
 
 ```
-src/
-├── components/        # Reusable UI components
-├── pages/            # Page components and routes
-├── services/         # Core services (Firebase, R2, etc.)
-└── main.tsx         # Application entry point
+├── src/              # Source code
+│   ├── app/         # Next.js app directory (pages and layouts)
+│   ├── components/  # Reusable UI components
+│   └── services/    # Core services (Firebase, R2, etc.)
+├── public/          # Static assets
+├── sample-data/     # Sample data for testing
+├── bash/           # Shell scripts
+└── [config files]   # Configuration files (next.config.ts, tsconfig.json, etc.)
 ```
 
 ## 6. Available Scripts
