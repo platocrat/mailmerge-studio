@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint --fix"
   },
+  "packageManager": "^npm@10.9.2",
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250525.0",
     "@types/d3": "^7.4.3",
