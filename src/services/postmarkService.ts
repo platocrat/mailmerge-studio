@@ -188,7 +188,7 @@ class PostmarkService {
         To: to,
         Subject: subject,
         HtmlBody: htmlBody,
-        MessageStream: 'inbound',
+        MessageStream: 'outbound',
       }
 
       await this.client.sendEmail(email)
@@ -234,7 +234,7 @@ class PostmarkService {
         TextBody: params.TextBody,
         HtmlBody: params.HtmlBody,
         Attachments: attachments,
-        MessageStream: params.MessageStream || 'inbound'
+        MessageStream: params.MessageStream || 'outbound'
       }
 
       return await this.client.sendEmail(message)

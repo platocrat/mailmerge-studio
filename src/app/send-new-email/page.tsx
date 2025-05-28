@@ -54,7 +54,7 @@ const _ = () => {
   const [totalSize, setTotalSize] = useState<number>(0)
   const [sizeError, setSizeError] = useState<string>('')
   const [isAddingAttachment, setIsAddingAttachment] = useState<boolean>(false)
-  const [processingResult, setProcessingResult] = useState<any>(null)
+  const [processedData, setProcessedData] = useState<any>(null)
 
 
   // ----------------------------- Handlers ------------------------------------
@@ -201,7 +201,7 @@ const _ = () => {
       // const postmarkServerToken = process.env.NEXT_PUBLIC_POSTMARK_SERVER_TOKEN || 'POSTMARK_API_TEST'
 
       // Process the webhook response
-      const webhookResponse = await fetch('/api/postmark/webhook/inbound', {
+      const response = await fetch('/api/postmark/webhook/inbound', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,14 +228,16 @@ const _ = () => {
         })
       })
 
-      if (!webhookResponse.ok) {
+      if (!response.ok) {
         throw new Error('Failed to process webhook')
       }
 
-      const webhookData = await webhookResponse.json()
-      
+      const json = await response.json()
+      console.log('json: ', json)
+      const _processedData = json.processedData
+
       setProcessingStatus('success')
-      setProcessingResult(webhookData.data)
+      setProcessedData(_processedData)
     } catch (error) {
       console.error('Error sending email:', error)
       setProcessingStatus('error')
@@ -583,7 +585,7 @@ const _ = () => {
               </div>
             ) }
 
-            { processingStatus === 'success' && processingResult && (
+            { processingStatus === 'success' && processedData && (
               <div className='py-4'>
                 <div className='bg-green-100 text-green-700 p-4 rounded-lg mb-6'>
                   <h3 className='text-lg font-medium mb-2'>
@@ -602,7 +604,7 @@ const _ = () => {
                     </h4>
                     <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
                       { Object.entries(
-                        processingResult.summary
+                        processedData.summary
                       ).map(([key, value]) => (
                         <div key={key} className='bg-gray-50 p-3 rounded'>
                           <div className='text-sm text-gray-500'>
@@ -617,26 +619,26 @@ const _ = () => {
                   </div>
 
                   {/* Chart Section */}
-                  { processingResult.chartData && (
+                  { processedData.chartData && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
                         { `Data Visualization` }
                       </h4>
                       <DataVisualization 
-                        chartData={processingResult.chartData} 
+                        chartData={processedData.chartData} 
                       />
                     </div>
                   )}
 
                   {/* Attachments Section */}
-                  { processingResult.attachmentUrls && 
-                    processingResult.attachmentUrls.length > 0 && (
+                  { processedData.attachmentUrls && 
+                    processedData.attachmentUrls.length > 0 && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
                         { `Processed Attachments` }
                       </h4>
                       <div className='space-y-2'>
-                        { processingResult.attachmentUrls.map((
+                        { processedData.attachmentUrls.map((
                           url: string, 
                           index: number
                         ) => (

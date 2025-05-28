@@ -50,9 +50,9 @@ export async function POST(request: NextRequest) {
       const jsonBody = {
         success: true,
         message: 'Email processed successfully',
-        data: processedData
+        processedData
       }
-      // 
+
       const responseInit: ResponseInit = {
         status: 200,
         headers: {
