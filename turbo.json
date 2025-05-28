@@ -5,6 +5,13 @@
     "package-lock.json",
     ".env"
   ],
+  "globalEnv": [
+    "POSTMARK_SERVER_TOKEN",
+    "POSTMARK_FROM_EMAIL",
+    "POSTMARK_INBOUND_HASH",
+    "NEXT_PUBLIC_POSTMARK_FROM_EMAIL",
+    "NEXT_PUBLIC_POSTMARK_INBOUND_HASH"
+  ],
   "tasks": {
     "build": {
       "dependsOn": [
