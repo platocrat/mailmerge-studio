@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { postmarkService } from '@/services/postmarkService'
 import { dataProcessingService } from '@/services/dataProcessingService'
 
-
 // Verify Postmark webhook signature
 function verifyPostmarkWebhook(request: NextRequest): boolean {
   const signature = request.headers.get('X-Postmark-Server-Token')
@@ -15,23 +14,23 @@ function verifyPostmarkWebhook(request: NextRequest): boolean {
 export async function POST(request: NextRequest) {
   if (request.method === 'POST') {
     try {
-      // // Verify the webhook signature
-      // if (!verifyPostmarkWebhook(request)) {
-      //   console.error(
-      //     'Invalid webhook signature: ', 
-      //     request.headers.get('X-Postmark-Server-Token')
-      //   )
+      // Verify the webhook signature
+      if (!verifyPostmarkWebhook(request)) {
+        console.error(
+          'Invalid webhook signature: ', 
+          request.headers.get('X-Postmark-Server-Token')
+        )
 
-      //   return NextResponse.json(
-      //     { error: 'Invalid webhook signature' },
-      //     { 
-      //       status: 401,
-      //       headers: {
-      //         'Content-Type': 'application/json'
-      //       }
-      //     }
-      //   )
-      // }
+        return NextResponse.json(
+          { error: 'Invalid webhook signature' },
+          { 
+            status: 401,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+      }
     
       // Parse the request body
       const webhookData = await request.json()
@@ -50,7 +49,10 @@ export async function POST(request: NextRequest) {
       const jsonBody = {
         success: true,
         message: 'Email processed successfully',
-        processedData
+        data: {
+          ...processedData,
+          charts: processedData.chartData ? [processedData.chartData] : []
+        }
       }
 
       const responseInit: ResponseInit = {
@@ -66,7 +68,8 @@ export async function POST(request: NextRequest) {
       console.error('Error processing inbound webhook:', error)
     
       const jsonBody = {
-        error: 'Internal server error'
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
       }
 
       const responseInit: ResponseInit = {

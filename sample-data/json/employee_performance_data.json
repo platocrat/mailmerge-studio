@@ -1,0 +1,70 @@
+[
+  {
+    "employeeId": "E101",
+    "name": "Alice Jennings",
+    "department": "Sales",
+    "position": "Regional Manager",
+    "reviewDate": "2025-03-01",
+    "reviewer": "Derek Mason",
+    "scores": {
+      "communication": 4.7,
+      "leadership": 4.5,
+      "initiative": 4.8,
+      "collaboration": 4.6,
+      "technicalSkill": 4.1
+    },
+    "overallRating": 4.5,
+    "feedback": "Consistently exceeds expectations in team leadership and cross-departmental communication."
+  },
+  {
+    "employeeId": "E102",
+    "name": "Marco Alvarez",
+    "department": "Customer Success",
+    "position": "Account Executive",
+    "reviewDate": "2025-03-01",
+    "reviewer": "Nina Zhou",
+    "scores": {
+      "communication": 4.2,
+      "leadership": 3.9,
+      "initiative": 4.4,
+      "collaboration": 4.7,
+      "technicalSkill": 3.8
+    },
+    "overallRating": 4.2,
+    "feedback": "Strong collaboration skills and proactive client engagement. Some room for growth in technical areas."
+  },
+  {
+    "employeeId": "E103",
+    "name": "Grace Lee",
+    "department": "Engineering",
+    "position": "Software Engineer",
+    "reviewDate": "2025-03-01",
+    "reviewer": "Thomas Green",
+    "scores": {
+      "communication": 4.1,
+      "leadership": 4.0,
+      "initiative": 4.6,
+      "collaboration": 4.3,
+      "technicalSkill": 4.9
+    },
+    "overallRating": 4.6,
+    "feedback": "Highly skilled technically and takes initiative in sprint planning. Emerging leadership qualities."
+  },
+  {
+    "employeeId": "E104",
+    "name": "Jordan Rivera",
+    "department": "Product",
+    "position": "Product Manager",
+    "reviewDate": "2025-03-01",
+    "reviewer": "Lena Wright",
+    "scores": {
+      "communication": 4.8,
+      "leadership": 4.9,
+      "initiative": 4.6,
+      "collaboration": 4.9,
+      "technicalSkill": 4.0
+    },
+    "overallRating": 4.7,
+    "feedback": "Strong leadership and excellent at cross-team communication. Valuable asset to the product lifecycle."
+  }
+]

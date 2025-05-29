@@ -15,6 +15,7 @@ import Papa from 'papaparse'
 import { r2Service } from './r2Service'
 import { getFirestoreInstance } from './firebase'
 import { ProcessedInboundEmail, PostmarkAttachment } from './postmarkService'
+import { openAiService } from './openAiService'
 
 // Data processing types
 export interface ProcessedData {
@@ -96,70 +97,48 @@ class DataProcessingService {
       attachmentUrls: [],
     }
 
-    // Process based on content and attachments
-    if (email.attachments.length > 0) {
-      // Process the first valid attachment
-      for (const attachment of email.attachments) {
-        if (!attachment.content) continue
+    try {
+      // Process attachments and store in R2
+      if (email.attachments.length > 0) {
+        const postmarkAttachments: PostmarkAttachment[] = email.attachments.map(attachment => ({
+          Name: attachment.name,
+          Content: attachment.content || '',
+          ContentType: attachment.type,
+          ContentLength: attachment.size
+        }))
 
-        const content = Buffer.from(attachment.content, 'base64').toString()
-
-        // Define the result type of the attachment
-        let result: { 
-          dataType: ProcessedData['dataType'], 
-          summary: Record<string, any>, 
-          chartData?: ChartData 
-        }
-
-        // Process based on attachment type and store the result
-        if (attachment.type.includes('csv')) {
-          const { summary, chartData } = await this.processCSVData(content)
-          result = { dataType: 'csv', summary, chartData }
-        } else if (attachment.type.includes('json')) {
-          const { summary, chartData } = await this.processJSONData(content)
-          result = { dataType: 'json', summary, chartData }
-        } else if (attachment.type.includes('image')) {
-          const { 
-            summary, 
-            chartData 
-          } = await this.processImageData(attachment.content)
-
-          result = { dataType: 'image', summary, chartData }
-        } else {
-          continue
-        }
-
-        // Update processed data with results from the attachment
-        processedData.dataType = result.dataType
-        processedData.summary = result.summary
-
-        if (result.chartData) {
-          processedData.chartData = result.chartData
-        }
-
-        // Stop after processing the first valid attachment
-        break
+        processedData.attachmentUrls = await this.processAttachments(
+          email.projectId,
+          email.id,
+          postmarkAttachments
+        )
       }
-    } else {
-      // Process email text content
-      const { 
-        summary, 
-        chartData 
-      } = await this.processTextData(email.textContent)
 
-      processedData.summary = summary
+      // Use OpenAI to analyze the data
+      const analysisResult = await openaiService.analyzeData(
+        email.attachments.map(attachment => ({
+          name: attachment.name,
+          type: attachment.type,
+          content: attachment.content || ''
+        })),
+        email.textContent
+      )
 
-      if (chartData) processedData.chartData = chartData
+      // Update processed data with OpenAI analysis results
+      processedData.summary = analysisResult.summary
+      processedData.chartData = analysisResult.chartData[0] // Use the first chart for now
+
+      // Store the processed data in Firestore
+      reference = collection(db, 'processedData')
+      data = { ...processedData, processedAt: new Date() }
+      
+      await addDoc(reference, data)
+
+      return processedData
+    } catch (error) {
+      console.error('Error processing email data:', error)
+      throw error
     }
-
-    // Store the processed data in Firestore
-    reference = collection(db, 'processedData')
-    data = { ...processedData, processedAt: new Date() }
-    
-    // Store the processed data in Firestore
-    await addDoc(reference, data)
-
-    return processedData
   }
 
 
@@ -175,36 +154,43 @@ class DataProcessingService {
     chartData?: ChartData
   }> {
     return new Promise((resolve) => {
-      Papa.parse(content, {
-        header: true,
-        complete: (results) => {
-          const data = results.data as Record<string, any>[]
-          const headers = results.meta.fields || []
-          
-          // Generate summary statistics
-          const summary: Record<string, any> = {
-            rowCount: data.length,
-            columnCount: headers.length,
-            columns: headers,
-          }
+      Papa.parse(
+        content, 
+        {
+          header: true,
+          complete: (results) => {
+            // Parse the CSV data
+            const data = results.data as Record<string, any>[]
+            const headers = results.meta.fields || []
+            
+            // Generate summary statistics
+            const summary: Record<string, any> = {
+              rowCount: data.length,
+              columnCount: headers.length,
+              columns: headers,
+            }
 
-          // Calculate numeric column statistics
-          headers.forEach(header => {
-            const values = data.map(row => parseFloat(row[header]))
-            if (!values.some(isNaN)) {
-              summary[`${header}_stats`] = {
-                min: Math.min(...values),
-                max: Math.max(...values),
-                avg: values.reduce((a, b) => a + b, 0) / values.length,
+            // Calculate numeric column statistics
+            headers.forEach(header => {
+              const values = data.map(row => parseFloat(row[header]))
+
+              // Check if the column is numeric
+              if (!values.some(isNaN)) {
+                summary[`${header}_stats`] = {
+                  min: Math.min(...values),
+                  max: Math.max(...values),
+                  avg: values.reduce((a, b) => a + b, 0) / values.length,
+                }
               }
             }
-          })
+          )
 
           // Generate chart data for the first numeric column
           const numericColumn = headers.find(header => 
             !data.some(row => isNaN(parseFloat(row[header])))
           )
 
+          // Generate chart data if there is a numeric column
           if (numericColumn) {
             const chartData: ChartData = {
               type: 'bar',
@@ -217,12 +203,14 @@ class DataProcessingService {
                 borderWidth: 1,
               }],
             }
+
             resolve({ summary, chartData })
           } else {
             resolve({ summary })
           }
-        },
-      })
+          },
+        }
+      )
     })
   }
 
