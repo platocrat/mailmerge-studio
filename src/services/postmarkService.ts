@@ -234,7 +234,7 @@ class PostmarkService {
         TextBody: params.TextBody,
         HtmlBody: params.HtmlBody,
         Attachments: attachments,
-        MessageStream: params.MessageStream || 'outbound'
+        MessageStream: 'outbound'
       }
 
       return await this.client.sendEmail(message)

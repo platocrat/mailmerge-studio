@@ -13,31 +13,15 @@ function verifyPostmarkWebhook(request: NextRequest): boolean {
 // ------------------------------ POST Request ---------------------------------
 export async function POST(request: NextRequest) {
   if (request.method === 'POST') {
-    try {
-      // Verify the webhook signature
-      if (!verifyPostmarkWebhook(request)) {
-        console.error(
-          'Invalid webhook signature: ', 
-          request.headers.get('X-Postmark-Server-Token')
-        )
-
-        return NextResponse.json(
-          { error: 'Invalid webhook signature' },
-          { 
-            status: 401,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        )
-      }
-    
+    try {    
       // Parse the request body
-      const webhookData = await request.json()
-      console.log('webhookData: ', webhookData)
+      const webhookJson = request.body || await request.json()
+      console.log('webhookJson: ', webhookJson)
 
       // Process the inbound email using PostmarkService
-      const processedEmail = postmarkService.processInboundWebhookData(webhookData)
+      const processedEmail = postmarkService.processInboundWebhookData(
+        webhookJson
+      )
       console.log('processedEmail: ', processedEmail)
 
       // Process the email data using DataProcessingService
@@ -51,7 +35,10 @@ export async function POST(request: NextRequest) {
         message: 'Email processed successfully',
         data: {
           ...processedData,
-          charts: processedData.chartData ? [processedData.chartData] : []
+          // Include text content and image files for display
+          textContent: processedData.textContent,
+          imageFiles: processedData.imageFiles,
+          attachmentUrls: processedData.attachmentUrls
         }
       }
 
