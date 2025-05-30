@@ -192,52 +192,20 @@ const _ = () => {
       })
 
       if (!sendEmailResponse.ok) {
+        setProcessingStatus('error')
         throw new Error('Failed to send email')
       }
 
       const sendEmailResult = await sendEmailResponse.json()
-      console.log('sendEmailResult: ', sendEmailResult)
 
-      // const postmarkServerToken = process.env.NEXT_PUBLIC_POSTMARK_SERVER_TOKEN || 'POSTMARK_API_TEST'
-
-      // Process the webhook response
-      const response = await fetch('/api/postmark/webhook/inbound', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'X-Postmark-Server-Token': postmarkServerToken,
-        },
-        body: JSON.stringify({
-          From: formData.From,
-          FromName: formData.FromName,
-          To: formData.To,
-          Subject: formData.Subject,
-          TextBody: formData.TextBody,
-          HtmlBody: formData.HtmlBody,
-          MailboxHash: 'test',
-          Attachments: postmarkAttachments,
-          SpamScore: formData.SpamScore,
-          MessageID: sendEmailResult.messageId,
-          Date: new Date().toISOString(),
-          Headers: [
-            {
-              Name: 'X-Spam-Score',
-              Value: formData.SpamScore
-            }
-          ]
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to process webhook')
+      if (sendEmailResult.success) {
+        setProcessingStatus('success')
+        console.log('sendEmailResult: ', sendEmailResult)
+      } else {
+        setProcessingStatus('error')
+        throw new Error(sendEmailResult.error)
       }
 
-      const json = await response.json()
-      console.log('json: ', json)
-      const _processedData = json.processedData
-
-      setProcessingStatus('success')
-      setProcessedData(_processedData)
     } catch (error) {
       console.error('Error sending email:', error)
       setProcessingStatus('error')

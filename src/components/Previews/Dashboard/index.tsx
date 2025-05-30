@@ -2,11 +2,9 @@
 import React, { FC, useState } from 'react'
 import { Share2, Download, Mail } from 'lucide-react'
 // Locals
-import DataVisualization from '@/components/DataViz/SampleDataViz'
-import { ProcessedData } from '@/services/dataProcessingService'
 import { postmarkService } from '@/services/postmarkService'
+import { ProcessedData } from '@/services/dataProcessingService'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
-
 
 interface DashboardPreviewProps {
   data: ProcessedData
@@ -17,7 +15,9 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
   data,
   showControls = true,
 }) => {
+  // ----------------------------- States --------------------------------------
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+
 
   const formatDate = (date: Date | string) => {
     const d = typeof date === 'string' ? new Date(date) : date
@@ -30,30 +30,37 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     }).format(d)
   }
 
+
   const handleShare = () => {
     // In a real implementation, this would generate a shareable link
     alert('Dashboard shared! (Demo functionality)')
   }
+
 
   const handleDownload = () => {
     // In a real implementation, this would download the dashboard as PDF
     alert('Downloading dashboard... (Demo functionality)')
   }
 
-  const handleSendEmail = async (to: string, subject: string, additionalMessage: string) => {
+
+  const handleSendEmail = async (
+    to: string, 
+    subject: string, 
+    additionalMessage: string
+  ) => {
     const htmlBody = `
       <h2>Dashboard: ${data.projectId}</h2>
       <p>Generated on ${formatDate(data.processedAt)}</p>
       ${additionalMessage ? `<p>${additionalMessage}</p>` : ''}
       <h3>Summary</h3>
-      <ul>
-        ${Object.entries(data.summary).map(([key, value]) => 
-          `<li><strong>${key}:</strong> ${value}</li>`
-        ).join('')}
-      </ul>
-      ${data.chartData ? `
-        <h3>Chart Data</h3>
-        <pre>${JSON.stringify(data.chartData, null, 2)}</pre>
+      <div>${data.textContent}</div>
+      ${data.imageFiles && data.imageFiles.length > 0 ? `
+        <h3>Data Visualizations</h3>
+        ${data.imageFiles.map((imageUrl, index) => `
+          <div>
+            <img src="${imageUrl}" alt="Data Visualization ${index + 1}" />
+          </div>
+        `).join('')}
       ` : ''}
     `
     
@@ -64,31 +71,58 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     )
   }
 
+
+  // ------------------------------ Render -------------------------------------
   return (
     <>
       <div className='bg-white rounded-lg shadow-md overflow-hidden'>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4'>
           <h2 className='text-xl font-bold text-white'>
-            Dashboard: {data.projectId}
+            { `Dashboard: ${data.projectId}` }
           </h2>
           <p className='text-blue-100 text-sm mt-1'>
-            Generated on {formatDate(data.processedAt)}
+            { `Generated on ${formatDate(data.processedAt)}` }
           </p>
         </div>
 
         <div className='p-6'>
-          {/* Data visualization */}
-          <DataVisualization
-            chartData={data.chartData}
-            summary={data.summary}
-            title={ `${data.dataType.toUpperCase()} Data Visualization` }
-            accessibilityDescription={ 
-              `Chart showing ${data.dataType} data from email ${data.sourceEmailId}` 
-            }
-          />
+          {/* Text Content */}
+          <div className='mb-6'>
+            <h3 className='text-lg font-medium text-gray-900 mb-3'>
+              { `Summary` }
+            </h3>
+            <div className='prose max-w-none'>
+              {data.textContent}
+            </div>
+          </div>
+
+          {/* Data Visualizations */}
+          { data.imageFiles && 
+            data.imageFiles.length > 0 && (
+            <div className='mb-6'>
+              <h3 className='text-lg font-medium text-gray-900 mb-3'>
+                { `Data Visualizations` }
+              </h3>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                { data.imageFiles.map((imageUrl, index) => (
+                  <div 
+                    key={index} 
+                    className='border border-gray-200 rounded-lg overflow-hidden'
+                  >
+                    <img 
+                      src={imageUrl} 
+                      alt={`Data Visualization ${index + 1}`}
+                      className='w-full h-auto'
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Attachments preview */}
-          { data.attachmentUrls && data.attachmentUrls.length > 0 && (
+          { data.attachmentUrls && 
+            data.attachmentUrls.length > 0 && (
             <div className='mt-6'>
               <h3 className='text-lg font-medium text-gray-900 mb-3'>
                 { `Attachments` }
@@ -104,7 +138,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
                     </div>
                     <div className='ml-3'>
                       <p className='text-sm font-medium text-gray-900'>
-                        { `Attachment ${index + 1}` }
+                        {`Attachment ${index + 1}`}
                       </p>
                       <a
                         href={url}

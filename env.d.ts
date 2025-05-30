@@ -22,5 +22,6 @@ namespace NodeJS {
     R2_ACCESS_KEY_ID: string
     R2_SECRET_ACCESS_KEY: string
     R2_BUCKET: string
+    OPENAI_API_KEY: string
   }
 }
