@@ -40,22 +40,23 @@ export async function POST(request: NextRequest) {
     )
     console.log('processedEmail: ', processedEmail)
 
-    // Process the email data using DataProcessingService
-    const processedData = await dataProcessingService.processEmailData(
-      processedEmail
-    )
-    console.log('processedData: ', processedData)
+    // // Process the email data using DataProcessingService
+    // const processedData = await dataProcessingService.processEmailData(
+    //   processedEmail
+    // )
+    // console.log('processedData: ', processedData)
   
     const jsonBody = {
       success: true,
       message: 'Email processed successfully',
-      data: {
-        ...processedData,
-        // Include text content and image files for display
-        textContent: processedData.textContent,
-        imageFiles: processedData.imageFiles,
-        attachmentUrls: processedData.attachmentUrls
-      }
+      // data: {
+      //   ...processedData,
+      //   // Include text content and image files for display
+      //   textContent: processedData.textContent,
+      //   imageFiles: processedData.imageFiles,
+      //   attachmentUrls: processedData.attachmentUrls
+      // }
+      data: processedEmail
     }
 
     const responseInit: ResponseInit = {
