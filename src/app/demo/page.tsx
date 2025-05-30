@@ -1,4 +1,4 @@
-// src/app/send-new-email/page.tsx
+// `src/app/demo/page.tsx`
 'use client'
 
 // Externals
@@ -7,7 +7,7 @@ import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
 // Locals
 import {
   PostmarkAttachment, 
-  PostmarkInboundWebhookData, 
+  PostmarkInboundWebhookJson, 
 } from '@/services/postmarkService'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
 
@@ -35,7 +35,7 @@ const _ = () => {
   const [ 
     formData, 
     setFormData 
-  ] = useState<Partial<PostmarkInboundWebhookData>>({
+  ] = useState<Partial<PostmarkInboundWebhookJson>>({
     FromName: 'Demo User',
     From: 'user@example.com',
     To: `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`,
@@ -43,8 +43,7 @@ const _ = () => {
     TextBody: 'Please process the attached CSV file with sales data.',
     HtmlBody: '<p>Please process the attached CSV file with sales data.</p>',
     MailboxHash: 'test',
-    Attachments: [],
-    SpamScore: '0',
+    Attachments: []
   })
   // Processing status and result
   const [
@@ -63,7 +62,7 @@ const _ = () => {
   ) => {
     const { name, value } = e.target
     setFormData(
-      (prev: Partial<PostmarkInboundWebhookData>) => (
+      (prev: Partial<PostmarkInboundWebhookJson>) => (
         { 
           ...prev, 
           [name]: value 
@@ -422,26 +421,6 @@ const _ = () => {
                     ) }
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <label 
-                  htmlFor='SpamScore' 
-                  className='block text-sm font-medium text-gray-700'
-                >
-                  { `Spam Score (0-10)` }
-                </label>
-                <input
-                  type='number'
-                  min='0'
-                  max='10'
-                  step='0.1'
-                  id='SpamScore'
-                  name='SpamScore'
-                  value={ formData.SpamScore || '0' }
-                  onChange={ handleInputChange }
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
-                />
               </div>
 
               <div>

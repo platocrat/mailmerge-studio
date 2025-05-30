@@ -2,8 +2,11 @@
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { postmarkService } from '@/services/postmarkService'
 import { dataProcessingService } from '@/services/dataProcessingService'
+import { 
+  postmarkService,
+  PostmarkInboundWebhookJson, 
+} from '@/services/postmarkService'
 
 // // Verify Postmark webhook signature
 // function verifyPostmarkWebhook(request: NextRequest): boolean {
@@ -30,9 +33,9 @@ export async function POST(request: NextRequest) {
     // }
     
     // Parse the request body
-    const webhookJson = await request.json()
+    const webhookJson: PostmarkInboundWebhookJson = await request.json()
     // PRETTY LOGGING
-    console.log(JSON.stringify(webhookJson, null, 2))
+    console.log(`webhookJson:`, JSON.stringify(webhookJson, null, 2))
 
     // Process the inbound email using PostmarkService
     const processedEmail = postmarkService.processInboundWebhookData(
@@ -40,23 +43,22 @@ export async function POST(request: NextRequest) {
     )
     console.log('processedEmail: ', processedEmail)
 
-    // // Process the email data using DataProcessingService
-    // const processedData = await dataProcessingService.processEmailData(
-    //   processedEmail
-    // )
-    // console.log('processedData: ', processedData)
+    // Process the email data using DataProcessingService
+    const processedData = await dataProcessingService.processEmailData(
+      processedEmail
+    )
+    console.log('processedData: ', processedData)
   
     const jsonBody = {
       success: true,
       message: 'Email processed successfully',
-      // data: {
-      //   ...processedData,
-      //   // Include text content and image files for display
-      //   textContent: processedData.textContent,
-      //   imageFiles: processedData.imageFiles,
-      //   attachmentUrls: processedData.attachmentUrls
-      // }
-      data: processedEmail
+      data: {
+        ...processedData,
+        // Include text content and image files for display
+        textContent: processedData.textContent,
+        imageFiles: processedData.imageFiles,
+        attachmentUrls: processedData.attachmentUrls
+      }
     }
 
     const responseInit: ResponseInit = {

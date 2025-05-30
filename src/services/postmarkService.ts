@@ -1,6 +1,5 @@
 // Service for handling Postmark webhook data
 // Externals
-import Papa from 'papaparse'
 import { Client, Message, Attachment } from 'postmark'
 
 
@@ -12,19 +11,51 @@ export interface PostmarkAttachment {
   ContentID?: string | null
 }
 
-export interface PostmarkInboundWebhookData {
-  From: string
+export interface PostmarkInboundWebhookJson {
   FromName: string
+  MessageStream: string
+  From: string
+  FromFull: {
+    Email: string
+    Name: string
+    MailboxHash: string
+  }
   To: string
+  ToFull: {
+    Email: string
+    Name: string
+    MailboxHash: string
+  }[]
+  Cc: string
+  CcFull: {
+    Email: string
+    Name: string
+    MailboxHash: string
+  }[] | string
+  Bcc: string
+  BccFull: {
+    Email: string
+    Name: string
+    MailboxHash: string
+  }[] | string
+  OriginalRecipient: string
   Subject: string
+  MessageID: string
+  ReplyTo: string
+  MailboxHash: string
+  Date: string
   TextBody: string
   HtmlBody: string
-  MailboxHash: string
-  Attachments: PostmarkAttachment[]
-  SpamScore: string
-  MessageID: string
-  Date: string
+  StrippedTextReply: string
+  Tag: string
   Headers: { Name: string; Value: string }[]
+  Attachments: {
+    Name: string
+    Content: string
+    ContentType: string
+    ContentLength: number
+    ContentID: string
+  }[] | []
 }
 
 export interface ProcessedInboundEmail {
@@ -35,16 +66,14 @@ export interface ProcessedInboundEmail {
   subject: string
   textContent: string
   htmlBody: string
-  attachments: Array<{
+  attachments: {
     name: string
     type: string
     size: number
-    content?: string
-    url?: string
-  }>
+    content: string
+    contentId: string
+  }[]
   receivedAt: string
-  commands: string[]
-  spamScore: number
 }
 
 
@@ -53,33 +82,11 @@ export interface ProcessedInboundEmail {
  * Service for handling Postmark webhook data and sending emails
  * This service processes inbound emails, extracts relevant information,
  * parses attachments, and sends emails using the Postmark API.
- * It also provides methods to parse CSV and JSON data from attachments.
  * @class PostmarkService
  * @property {Client} client - Postmark API client instance
  * @method processInboundWebhookData - Processes inbound webhook JSON data from Postmark
- * @method parseCSVData - Parses CSV data from a base64-encoded string
- * @method parseJSONData - Parses JSON data from a base64-encoded string
  * @method sendDashboardEmail - Sends an email using the Postmark API
- * @method extractProjectId - Extracts project ID from the mailbox hash or To address
- * @method extractCommands - Extracts commands from the subject line
- * @method generateId - Generates a unique ID for the email
- * @example
- * const postmarkService = new PostmarkService();
- * const processedEmail = postmarkService.processInboundWebhook(webhookData);
- * const csvData = postmarkService.parseCSVData(processedEmail.attachments[0].content);
- * const jsonData = postmarkService.parseJSONData(processedEmail.attachments[0].content);
- * // Send dashboard email
- * postmarkService.sendDashboardEmail(
- *   'notifications@mailmerge.studio',
- *   'New email received',
- *   `
- *   <p>From: ${processedEmail.fromName} &lt;${processedEmail.fromEmail}&gt;</p>
- *   <p>Subject: ${processedEmail.subject}</p>
- *   <p>Commands: ${processedEmail.commands.join(', ')}</p>
- *   <p>CSV Data: ${JSON.stringify(csvData)}</p>
- *   <p>JSON Data: ${jsonData}</p>
- *   `
- * )
+ * @method extractProjectId - Extracts project ID from the mailbox hash or To address 
  */
 class PostmarkService {
   private client: Client
@@ -91,13 +98,9 @@ class PostmarkService {
   }
 
   // Process an inbound webhook from Postmark
-  processInboundWebhookData(json: PostmarkInboundWebhookData): ProcessedInboundEmail {
+  processInboundWebhookData(json: PostmarkInboundWebhookJson): ProcessedInboundEmail {
     // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
-    const projectId = this.extractProjectId(json.MailboxHash || json.To)
-
-    // Extract commands from subject line
-    // Format: Subject line #command1 #command2
-    const commands = this.extractCommands(json.Subject)
+    const projectId = this.extractProjectId(json.MessageID)
 
     // Process attachments
     const processedAttachments = json.Attachments.map((attachment) => ({
@@ -117,7 +120,6 @@ class PostmarkService {
     const textContent = json.TextBody
     const htmlBody = json.HtmlBody
     const attachments = processedAttachments
-    const spamScore = parseFloat(json.SpamScore) || 0
 
     return {
       id,
@@ -129,49 +131,13 @@ class PostmarkService {
       htmlBody,
       attachments,
       receivedAt,
-      commands,
-      spamScore,
     }
   }
 
-  // Parse CSV data from attachment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  parseCSVData(base64Content: string): any[] {
-    const decodedContent = Buffer.from(base64Content, 'base64').toString(
-      'utf-8',
-    )
-
-    console.log('decodedContent', decodedContent)
-
-    const results = Papa.parse(decodedContent, {
-      header: true,
-      skipEmptyLines: true,
-    })
-
-    return results.data
-  }
-
-  // Parse JSON data from attachment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  parseJSONData(base64Content: string): any {
-    const decodedContent = atob(base64Content)
-    return JSON.parse(decodedContent)
-  }
-
-  // Extract project ID from mailbox hash or To address
-  private extractProjectId(addressString: string): string {
+  // Extract project ID from message ID
+  private extractProjectId(messageId: string): string {
     // Default project ID since we're using a single inbound server
-    return 'default'
-  }
-
-  // Extract commands from subject line
-  private extractCommands(subject: string): string[] {
-    const commandRegex = /#([a-zA-Z0-9_]+)/g
-    const matches = subject.match(commandRegex)
-
-    return matches 
-      ? matches.map((match): string => match.substring(1)) 
-      : []
+    return 'default' + messageId
   }
 
   // Send dashboard email
