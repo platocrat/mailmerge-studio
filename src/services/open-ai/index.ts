@@ -1,7 +1,7 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { MODEL } from './config'
+import { MODEL } from '@/utils/open-ai'
 
 
 // Initialize OpenAI client

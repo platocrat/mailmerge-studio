@@ -3,12 +3,11 @@
 // Externals
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useSearchParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, Download, Share2, Mail } from 'lucide-react'
 // Locals
+import { postmarkService } from '@/services'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
-import { postmarkService } from '@/services/postmarkService'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
 
 

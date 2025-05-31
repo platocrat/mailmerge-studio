@@ -2,8 +2,7 @@
 import React, { FC, useState } from 'react'
 import { Share2, Download, Mail } from 'lucide-react'
 // Locals
-import { postmarkService } from '@/services/postmarkService'
-import { ProcessedData } from '@/services/dataProcessingService'
+import { postmarkService, ProcessedData } from '@/services'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
 
 interface DashboardPreviewProps {
@@ -16,18 +15,25 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
   showControls = true,
 }) => {
   // ----------------------------- States --------------------------------------
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false)
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false)
 
 
-  const formatDate = (date: Date | string) => {
-    const d = typeof date === 'string' ? new Date(date) : date
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-    }).format(d)
+  const formatDate = (_date: Date | string): string => {
+    const date_: Date = typeof _date === 'string' 
+      ? new Date(_date) 
+      : _date
+    const formattedDate: string = new Intl.DateTimeFormat(
+      'en-US', 
+      {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+      }
+    ).format(date_)
+
+    return formattedDate
   }
 
 
@@ -49,19 +55,25 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     additionalMessage: string
   ) => {
     const htmlBody = `
-      <h2>Dashboard: ${data.projectId}</h2>
-      <p>Generated on ${formatDate(data.processedAt)}</p>
-      ${additionalMessage ? `<p>${additionalMessage}</p>` : ''}
+      <h2>Dashboard: ${ data.projectId }</h2>
+      <p>Generated on ${ formatDate(data.processedAt) }</p>
+      ${
+        additionalMessage  
+          ? `<p>${additionalMessage}</p>` 
+          : ''
+        }
       <h3>Summary</h3>
-      <div>${data.textContent}</div>
-      ${data.imageFiles && data.imageFiles.length > 0 ? `
-        <h3>Data Visualizations</h3>
-        ${data.imageFiles.map((imageUrl, index) => `
-          <div>
-            <img src="${imageUrl}" alt="Data Visualization ${index + 1}" />
-          </div>
-        `).join('')}
-      ` : ''}
+      <div>${ data.summaryFileUrl }</div>
+      ${ data.visualizationUrls && data.visualizationUrls.length > 0 ? `
+          <h3>Data Visualizations</h3>
+          ${ data.visualizationUrls.map((imageUrl: string, i: number): string => `
+            <div>
+              <img src="${ imageUrl }" alt="Data Visualization ${ i + 1 }" />
+            </div>
+          `).join('')}
+        ` 
+        : ''
+      }
     `
     
     await postmarkService.sendDashboardEmail(
@@ -92,26 +104,30 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
               { `Summary` }
             </h3>
             <div className='prose max-w-none'>
-              {data.textContent}
+              <iframe 
+                src={data.summaryFileUrl} 
+                className="w-full h-64 border-0"
+                title="Summary Content"
+              />
             </div>
           </div>
 
           {/* Data Visualizations */}
-          { data.imageFiles && 
-            data.imageFiles.length > 0 && (
+          { data.visualizationUrls && 
+            data.visualizationUrls.length > 0 && (
             <div className='mb-6'>
               <h3 className='text-lg font-medium text-gray-900 mb-3'>
                 { `Data Visualizations` }
               </h3>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                { data.imageFiles.map((imageUrl, index) => (
+                { data.visualizationUrls.map((imageUrl: string, i: number) => (
                   <div 
-                    key={index} 
+                    key={ i } 
                     className='border border-gray-200 rounded-lg overflow-hidden'
                   >
                     <img 
-                      src={imageUrl} 
-                      alt={`Data Visualization ${index + 1}`}
+                      src={ imageUrl } 
+                      alt={ `Data Visualization ${ i + 1 }` }
                       className='w-full h-auto'
                     />
                   </div>
@@ -128,9 +144,9 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
                 { `Attachments` }
               </h3>
               <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                { data.attachmentUrls.map((url, index) => (
+                { data.attachmentUrls.map((url: string, i: number) => (
                   <div
-                    key={index}
+                    key={ i }
                     className='border border-gray-200 rounded-md p-3 flex items-center'
                   >
                     <div className='bg-gray-100 p-2 rounded-md'>
@@ -138,7 +154,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
                     </div>
                     <div className='ml-3'>
                       <p className='text-sm font-medium text-gray-900'>
-                        {`Attachment ${index + 1}`}
+                        { `Attachment ${ i + 1 }` }
                       </p>
                       <a
                         href={url}

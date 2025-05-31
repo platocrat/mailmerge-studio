@@ -1,7 +1,7 @@
 // Externals
 import { NextResponse } from 'next/server'
 // Locals
-import { openaiService } from '@/services/open-ai/openaiService'
+import { openaiService } from '@/services'
 
 
 export async function POST(request: Request) {

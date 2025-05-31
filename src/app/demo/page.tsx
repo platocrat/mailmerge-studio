@@ -5,10 +5,7 @@
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
 // Locals
-import {
-  PostmarkAttachment, 
-  PostmarkInboundWebhookJson, 
-} from '@/services/postmarkService'
+import { PostmarkAttachment, PostmarkInboundWebhookJson } from '@/services'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
 
 // --------------------------------- Types -------------------------------------
@@ -38,7 +35,7 @@ const _ = () => {
   ] = useState<Partial<PostmarkInboundWebhookJson>>({
     FromName: 'Demo User',
     From: 'user@example.com',
-    To: `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`,
+    To: `${ process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH }@inbound.postmarkapp.com`,
     Subject: 'Test Data #csv',
     TextBody: 'Please process the attached CSV file with sales data.',
     HtmlBody: '<p>Please process the attached CSV file with sales data.</p>',

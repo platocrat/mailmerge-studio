@@ -1,0 +1,1 @@
+export const LOG_INDEX_RANGE = 10_000

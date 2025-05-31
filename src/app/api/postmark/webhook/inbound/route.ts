@@ -2,11 +2,12 @@
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { dataProcessingService } from '@/services/dataProcessingService'
 import { 
+  dataProcessingService,
   postmarkService,
-  PostmarkInboundWebhookJson, 
-} from '@/services/postmarkService'
+  PostmarkInboundWebhookJson,
+  ProcessedData,
+} from '@/services'
 
 // // Verify Postmark webhook signature
 // function verifyPostmarkWebhook(request: NextRequest): boolean {
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
     console.log('processedEmail: ', processedEmail)
 
     // Process the email data using DataProcessingService
-    const processedData = await dataProcessingService.processEmailData(
+    const processedData: ProcessedData = await dataProcessingService.processEmailData(
       processedEmail
     )
     console.log('processedData: ', processedData)
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest) {
       data: {
         ...processedData,
         // Include text content and image files for display
-        textContent: processedData.textContent,
-        imageFiles: processedData.imageFiles,
+        summaryFileUrl: processedData.summaryFileUrl,
+        visualizationUrls: processedData.visualizationUrls,
         attachmentUrls: processedData.attachmentUrls
       }
     }

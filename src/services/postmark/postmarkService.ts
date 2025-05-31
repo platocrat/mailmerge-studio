@@ -58,7 +58,7 @@ export interface PostmarkInboundWebhookJson {
   }[] | []
 }
 
-export interface ProcessedInboundEmail {
+export interface ProcessedInboundJson {
   id: string
   projectId: string
   fromEmail: string
@@ -98,7 +98,9 @@ class PostmarkService {
   }
 
   // Process an inbound webhook from Postmark
-  processInboundWebhookData(json: PostmarkInboundWebhookJson): ProcessedInboundEmail {
+  processInboundWebhookData(
+    json: PostmarkInboundWebhookJson
+  ): ProcessedInboundJson {
     // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
     const projectId = this.extractProjectId(json.MessageID)
 

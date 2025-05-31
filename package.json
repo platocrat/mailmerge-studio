@@ -16,9 +16,11 @@
   },
   "packageManager": "^npm@10.9.2",
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.821.0",
+    "@aws-sdk/client-ssm": "^3.821.0",
+    "@aws-sdk/lib-dynamodb": "^3.821.0",
     "@cloudflare/workers-types": "^4.20250525.0",
-    "@types/d3": "^7.4.3",
-    "@types/papaparse": "^5.3.16",
+    "@tailwindcss/postcss": "^4.1.7",
     "chart.js": "^4.4.9",
     "d3": "^7.9.0",
     "firebase": "^11.8.1",
@@ -31,21 +33,22 @@
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^19.1.0",
-    "turbo": "^2.5.4"
+    "tailwindcss": "^4.1.7",
+    "ts-node": "^10.9.2",
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@tailwindcss/postcss": "^4.1.7",
+    "@types/d3": "^7.4.3",
     "@types/node": "^22.15.21",
+    "@types/papaparse": "^5.3.16",
     "@types/react": "^19.1.5",
     "@types/react-dom": "^19.1.5",
     "eslint": "^9.27.0",
     "eslint-config-next": "^15.4.0-canary.51",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.4.0",
-    "prettier": "^3.5.3",
-    "tailwindcss": "^4.1.7",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "prettier": "^3.5.3"
   }
 }

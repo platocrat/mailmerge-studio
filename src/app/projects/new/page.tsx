@@ -6,7 +6,7 @@ import { Mail, ArrowLeft } from 'lucide-react'
 import { collection, addDoc } from 'firebase/firestore'
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 // Locals
-import { getFirestoreInstance } from '@/services/firebase'
+import { initializeFirebase } from '@/services'
 
 
 const _ = () => {
@@ -30,12 +30,12 @@ const _ = () => {
     setLoading(true)
 
     try {
-      const db = getFirestoreInstance()
+      const { firestore } = initializeFirebase()
 
       // Generate a unique project ID
       const projectId = Math.random().toString(36).substring(2, 15)
       // Use the single inbound server address
-      const emailAddress = `${process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH}@inbound.postmarkapp.com`
+      const emailAddress = `${ process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH }@inbound.postmarkapp.com`
 
       const projectData = {
         ...formData,
@@ -46,7 +46,7 @@ const _ = () => {
         emailCount: 0,
       }
 
-      const reference = collection(db, 'projects')
+      const reference = collection(firestore, 'projects')
       const docRef = await addDoc(reference, projectData)
 
       router.push(`/projects/${projectId}`)

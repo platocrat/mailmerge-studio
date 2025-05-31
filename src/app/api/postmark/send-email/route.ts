@@ -1,7 +1,7 @@
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { postmarkService } from '@/services/postmarkService'
+import { postmarkService } from '@/services'
 
 
 // ------------------------------ POST Request ---------------------------------

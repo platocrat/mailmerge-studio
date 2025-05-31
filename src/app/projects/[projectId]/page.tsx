@@ -15,9 +15,9 @@ import {
   ExternalLink,
 } from 'lucide-react'
 // Locals
+import { ProcessedData } from '@/services'
 import EmailPreview from '@/components/Previews/Email'
 import DashboardPreview from '@/components/Previews/Dashboard'
-import { ProcessedData } from '@/services/dataProcessingService'
 
 
 // Demo data

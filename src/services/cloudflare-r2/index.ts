@@ -1,5 +1,4 @@
 // Cloudflare R2 service implementation
-
 export interface R2Config {
   accountId: string
   accessKeyId: string
