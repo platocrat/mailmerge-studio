@@ -3,20 +3,28 @@
 // Externals
 import { useRouter } from 'next/navigation'
 import { Mail, ArrowLeft } from 'lucide-react'
-import { collection, addDoc } from 'firebase/firestore'
 import React, { ChangeEvent, FormEvent, useState } from 'react'
 // Locals
-import { initializeFirebase } from '@/services'
+import { dynamoService } from '@/services/data'
+import { DYNAMODB_TABLE_NAMES } from '@/utils'
 
 
+// ------------------------------- Component -----------------------------------
 const _ = () => {
+  // ------------------------------- Hooks -------------------------------------
   const router = useRouter()
+  // ------------------------------- States ------------------------------------
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
   })
 
+  // ------------------------------- Handlers ----------------------------------
+  /**
+   * @dev Handle input change
+   * @param e - The input event
+   */
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -24,14 +32,16 @@ const _ = () => {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  /**
+   * @dev Handle form submission
+   * @param e - The form event
+   */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     setLoading(true)
 
     try {
-      const { firestore } = initializeFirebase()
-
       // Generate a unique project ID
       const projectId = Math.random().toString(36).substring(2, 15)
       // Use the single inbound server address
@@ -41,13 +51,13 @@ const _ = () => {
         ...formData,
         id: projectId,
         emailAddress,
-        createdAt: new Date(),
+        createdAt: Date.now(),
         status: 'inactive',
         emailCount: 0,
       }
 
-      const reference = collection(firestore, 'projects')
-      const docRef = await addDoc(reference, projectData)
+      // Save to DynamoDB
+      await dynamoService.putItem(DYNAMODB_TABLE_NAMES.projects, projectData)
 
       router.push(`/projects/${projectId}`)
     } catch (error) {
@@ -58,8 +68,7 @@ const _ = () => {
     }
   }
 
-
-
+  // ------------------------------- Rendering ---------------------------------
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
       <button

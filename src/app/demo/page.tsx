@@ -2,21 +2,24 @@
 'use client'
 
 // Externals
-import React, { ChangeEvent, FormEvent, useState } from 'react'
-import { Mail, Send, FileText, Plus, Trash2, BarChart2 } from 'lucide-react'
+import { FileText as FileIcon, Mail, Plus, Send, Trash2 } from 'lucide-react'
+import { ChangeEvent, FormEvent, useState } from 'react'
 // Locals
-import { PostmarkAttachment, PostmarkInboundWebhookJson } from '@/services'
-import DataVisualization from '@/components/DataViz/SampleDataViz'
+import type {
+  PostmarkAttachment,
+  PostmarkInboundWebhookJson,
+  PROCESSED_DATA__DYNAMODB,
+} from '@/types'
 
 // --------------------------------- Types -------------------------------------
-type Attachments = Array<{ 
-  name: string, 
-  type: string,
-  size: number,
+type Attachments = { 
+  name: string 
+  type: string
+  size: number
   file?: File 
-}>
+}[]
 
-// --------------------------------Constants -----------------------------------
+// ------------------------------ Constants ------------------------------------
 // Random inbound hash for displaying in the UI
 const RANDOM_INBOUND_HASH = '2a085f662f0b4fca9e7d7a344e36583e'
 const MAX_TOTAL_SIZE_MB = 35
@@ -44,13 +47,16 @@ const _ = () => {
   })
   // Processing status and result
   const [
+    processedData, 
+    setProcessedData
+  ] = useState<PROCESSED_DATA__DYNAMODB | null>(null)
+  const [
     processingStatus, 
     setProcessingStatus
   ] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
   const [totalSize, setTotalSize] = useState<number>(0)
   const [sizeError, setSizeError] = useState<string>('')
   const [isAddingAttachment, setIsAddingAttachment] = useState<boolean>(false)
-  const [processedData, setProcessedData] = useState<any>(null)
 
 
   // ----------------------------- Handlers ------------------------------------
@@ -71,7 +77,9 @@ const _ = () => {
 
   const handleAddAttachment = () => {
     setIsAddingAttachment(true)
+
     const fileInput = document.createElement('input')
+
     fileInput.type = 'file'
     fileInput.accept = '.csv,.json,image/*'
     
@@ -82,7 +90,7 @@ const _ = () => {
         const newSize = totalSize + file.size
         
         if (newSize > MAX_TOTAL_SIZE_BYTES) {
-          setSizeError(`Total attachment size cannot exceed ${MAX_TOTAL_SIZE_MB}MB`)
+          setSizeError(`Total attachment size cannot exceed ${ MAX_TOTAL_SIZE_MB }MB`)
           setIsAddingAttachment(false)
           return
         }
@@ -284,26 +292,6 @@ const _ = () => {
                 </div>
               </div>
 
-              {/* <div>
-                <label 
-                  htmlFor='To' 
-                  className='block text-sm font-medium text-gray-700'
-                >
-                  { `To Email (Project Address)` }
-                </label>
-                <input
-                  type='email'
-                  name='To'
-                  id='To'
-                  value={ formData.To || '' }
-                  onChange={ handleInputChange }
-                  className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
-                />
-                <p className='mt-1 text-xs text-gray-500'>
-                  { `Format: ${ RANDOM_INBOUND_HASH }@inbound.postmarkapp.com` }
-                </p>
-              </div> */}
-
               <div>
                 <label 
                   htmlFor='Subject' 
@@ -351,7 +339,7 @@ const _ = () => {
                       key={ index } 
                       className='flex items-center space-x-2'
                     >
-                      <FileText className='h-5 w-5 text-gray-400' />
+                      <FileIcon className='h-5 w-5 text-gray-400' />
                       <div className='flex-1'>
                         <div className='text-sm text-gray-900'>
                           { attachment.name }
@@ -472,7 +460,7 @@ const _ = () => {
         <div className='bg-white rounded-lg shadow-md overflow-hidden'>
           <div className='p-6'>
             <h2 className='text-lg font-medium text-gray-900 mb-4'>
-              <BarChart2 className='inline-block h-5 w-5 mr-2 text-blue-600' />
+              <Mail className='inline-block h-5 w-5 mr-2 text-blue-600' />
               { `Processing Result` }
             </h2>
 
@@ -541,38 +529,43 @@ const _ = () => {
                 </div>
 
                 <div className='space-y-6'>
-                  {/* Summary Section */}
-                  <div className='bg-white rounded-lg shadow p-4'>
-                    <h4 className='text-md font-medium text-gray-900 mb-3'>
-                      { `Summary` }
-                    </h4>
-                    <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-                      { Object.entries(
-                        processedData.summary
-                      ).map(([key, value]) => (
-                        <div key={key} className='bg-gray-50 p-3 rounded'>
-                          <div className='text-sm text-gray-500'>
-                            {key}
-                          </div>
-                          <div className='text-lg font-semibold'>
-                            {String(value)}
-                          </div>
-                        </div>
-                      )) }
-                    </div>
-                  </div>
-
-                  {/* Chart Section */}
-                  { processedData.chartData && (
+                  {/* Summary Section (text) */}
+                  { processedData.summaryFileUrl && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
-                        { `Data Visualization` }
+                        { `Summary` }
                       </h4>
-                      <DataVisualization 
-                        chartData={processedData.chartData} 
+                      <iframe 
+                        src={ processedData.summaryFileUrl }
+                        className='w-full h-64 border-0'
+                        title='Summary'
                       />
                     </div>
-                  )}
+                  ) }
+
+                  {/* Visualization Images */}
+                  { processedData.visualizationUrls && 
+                    processedData.visualizationUrls.length > 0 && (
+                    <div className='bg-white rounded-lg shadow p-4'>
+                      <h4 className='text-md font-medium text-gray-900 mb-3'>
+                        { `Data Visualizations` }
+                      </h4>
+                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                        { processedData.visualizationUrls.map((url: string, idx: number) => (
+                          <div 
+                            key={idx} 
+                            className='border border-gray-200 rounded-lg overflow-hidden'
+                          >
+                            <img 
+                              src={url} 
+                              alt={ `Visualization ${ idx + 1 }` } 
+                              className='w-full h-auto' 
+                            />
+                          </div>
+                        )) }
+                      </div>
+                    </div>
+                  ) }
 
                   {/* Attachments Section */}
                   { processedData.attachmentUrls && 
@@ -590,7 +583,7 @@ const _ = () => {
                             key={index} 
                             className='flex items-center space-x-2'
                           >
-                            <FileText className='h-5 w-5 text-gray-400' />
+                            <FileIcon className='h-5 w-5 text-gray-400' />
                             <a 
                               href={url} 
                               target='_blank' 

@@ -47,7 +47,7 @@ export default function RootLayout({
                   <Link href='/' className='text-gray-700 hover:text-blue-600 font-medium'>
                     { `Home` }
                   </Link>
-                  <Link href='/send-new-email' className='text-gray-700 hover:text-blue-600 font-medium'>
+                  <Link href='/demo' className='text-gray-700 hover:text-blue-600 font-medium'>
                     { `Demo` }
                   </Link>
                   <a

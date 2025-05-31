@@ -1,8 +1,7 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { MODEL } from '@/utils/open-ai'
-
+import { MODEL } from '@/utils'
 
 // Initialize OpenAI client
 const client = new OpenAI({

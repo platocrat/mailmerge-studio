@@ -23,12 +23,23 @@ export const CREDENTIALS = {
  * @dev Used for AWS DynamoDB API calls
  */
 export const DYNAMODB_TABLE_NAMES = {
-  'some-table-name': 'some-table-name'
+  processedData: 'processed-data',
+  projects: 'projects',
 }
 
 /**
  * @dev Used for AWS SSM API calls
  */
 export const AWS_PARAMETER_NAMES = {
-  'some-parameter-name': 'some-parameter-name'
+  // ----------------------------- OpenAI ------------------------------------
+  OPENAI_API_KEY: 'OPENAI_API_KEY',
+  // --------------------------- Cloudflare R2 -------------------------------
+  R2_ACCOUNT_ID: 'R2_ACCOUNT_ID',
+  R2_ACCESS_KEY_ID: 'R2_ACCESS_KEY_ID',
+  R2_SECRET_ACCESS_KEY: 'R2_SECRET_ACCESS_KEY',
+  R2_BUCKET: 'R2_BUCKET',
+  // ----------------------------- Postmark ----------------------------------
+  POSTMARK_SERVER_TOKEN: 'POSTMARK_SERVER_TOKEN',
+  POSTMARK_FROM_EMAIL: 'POSTMARK_FROM_EMAIL',
+  POSTMARK_INBOUND_HASH: 'POSTMARK_INBOUND_HASH',
 }

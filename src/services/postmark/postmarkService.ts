@@ -1,80 +1,12 @@
 // Service for handling Postmark webhook data
 // Externals
 import { Client, Message, Attachment } from 'postmark'
-
-
-export interface PostmarkAttachment {
-  Name: string
-  Content: string // Base64-encoded content
-  ContentType: string
-  ContentLength: number
-  ContentID?: string | null
-}
-
-export interface PostmarkInboundWebhookJson {
-  FromName: string
-  MessageStream: string
-  From: string
-  FromFull: {
-    Email: string
-    Name: string
-    MailboxHash: string
-  }
-  To: string
-  ToFull: {
-    Email: string
-    Name: string
-    MailboxHash: string
-  }[]
-  Cc: string
-  CcFull: {
-    Email: string
-    Name: string
-    MailboxHash: string
-  }[] | string
-  Bcc: string
-  BccFull: {
-    Email: string
-    Name: string
-    MailboxHash: string
-  }[] | string
-  OriginalRecipient: string
-  Subject: string
-  MessageID: string
-  ReplyTo: string
-  MailboxHash: string
-  Date: string
-  TextBody: string
-  HtmlBody: string
-  StrippedTextReply: string
-  Tag: string
-  Headers: { Name: string; Value: string }[]
-  Attachments: {
-    Name: string
-    Content: string
-    ContentType: string
-    ContentLength: number
-    ContentID: string
-  }[] | []
-}
-
-export interface ProcessedInboundJson {
-  id: string
-  projectId: string
-  fromEmail: string
-  fromName: string
-  subject: string
-  textContent: string
-  htmlBody: string
-  attachments: {
-    name: string
-    type: string
-    size: number
-    content: string
-    contentId: string
-  }[]
-  receivedAt: string
-}
+// Locals
+import type { 
+  PostmarkAttachment, 
+  PostmarkInboundWebhookJson, 
+  ProcessedInboundJson 
+} from '@/types'
 
 
 // ------------------------- PostmarkService class -----------------------------

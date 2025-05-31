@@ -2,12 +2,12 @@
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { 
-  dataProcessingService,
-  postmarkService,
-  PostmarkInboundWebhookJson,
-  ProcessedData,
-} from '@/services'
+import type { 
+  PostmarkInboundWebhookJson, 
+  PROCESSED_DATA__DYNAMODB
+} from '@/types'
+import { postmarkService } from '@/services'
+import { dataProcessingService } from '@/services/data/processing-service'
 
 // // Verify Postmark webhook signature
 // function verifyPostmarkWebhook(request: NextRequest): boolean {
@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     
     // Parse the request body
     const webhookJson: PostmarkInboundWebhookJson = await request.json()
-    // PRETTY LOGGING
     console.log(`webhookJson:`, JSON.stringify(webhookJson, null, 2))
 
     // Process the inbound email using PostmarkService
@@ -45,9 +44,8 @@ export async function POST(request: NextRequest) {
     console.log('processedEmail: ', processedEmail)
 
     // Process the email data using DataProcessingService
-    const processedData: ProcessedData = await dataProcessingService.processEmailData(
-      processedEmail
-    )
+    const processedData: PROCESSED_DATA__DYNAMODB = 
+      await dataProcessingService.processEmailData(processedEmail)
     console.log('processedData: ', processedData)
   
     const jsonBody = {

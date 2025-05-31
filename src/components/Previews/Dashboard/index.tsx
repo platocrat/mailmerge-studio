@@ -2,11 +2,12 @@
 import React, { FC, useState } from 'react'
 import { Share2, Download, Mail } from 'lucide-react'
 // Locals
-import { postmarkService, ProcessedData } from '@/services'
+import { postmarkService } from '@/services'
+import type { PROCESSED_DATA__DYNAMODB } from '@/types'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
 
 interface DashboardPreviewProps {
-  data: ProcessedData
+  data: PROCESSED_DATA__DYNAMODB
   showControls?: boolean
 }
 
@@ -55,8 +56,8 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     additionalMessage: string
   ) => {
     const htmlBody = `
-      <h2>Dashboard: ${ data.projectId }</h2>
-      <p>Generated on ${ formatDate(data.processedAt) }</p>
+      <h2>Dashboard: ${ data.id }</h2>
+      <p>Generated on ${ formatDate(new Date(data.processedAtTimestamp)) }</p>
       ${
         additionalMessage  
           ? `<p>${additionalMessage}</p>` 
@@ -90,10 +91,10 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
       <div className='bg-white rounded-lg shadow-md overflow-hidden'>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4'>
           <h2 className='text-xl font-bold text-white'>
-            { `Dashboard: ${data.projectId}` }
+            { `Dashboard: ${data.id}` }
           </h2>
           <p className='text-blue-100 text-sm mt-1'>
-            { `Generated on ${formatDate(data.processedAt)}` }
+            { `Generated on ${ formatDate(new Date(data.processedAtTimestamp)) }` }
           </p>
         </div>
 
@@ -105,9 +106,9 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
             </h3>
             <div className='prose max-w-none'>
               <iframe 
-                src={data.summaryFileUrl} 
-                className="w-full h-64 border-0"
-                title="Summary Content"
+                src={ data.summaryFileUrl }
+                className='w-full h-64 border-0'
+                title='Summary Content'
               />
             </div>
           </div>
@@ -204,7 +205,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
         isOpen={isEmailModalOpen}
         onClose={() => setIsEmailModalOpen(false)}
         onSend={handleSendEmail}
-        defaultSubject={`Dashboard: ${data.projectId}`}
+        defaultSubject={ `Dashboard: ${data.id}` }
         defaultMessage=""
       />
     </>

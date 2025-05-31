@@ -1,43 +1,25 @@
 // Externals
 import {
-  collection,
-  addDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  updateDoc,
-  doc,
-  Firestore,
-} from 'firebase/firestore'
+  QueryCommand,
+  UpdateCommand,
+  QueryCommandInput,
+  UpdateCommandInput,
+} from '@aws-sdk/lib-dynamodb'
 // Locals
 import { 
-  r2Service, 
-  initializeFirebase, 
-  openaiService,
-  PostmarkAttachment,
+  ddbDocClient,
+  DYNAMODB_TABLE_NAMES,
+} from '@/utils'
+import type { 
+  PostmarkAttachment, 
   ProcessedInboundJson,
-} from '@/services'
-
+} from '@/types'
+import { r2Service } from '@/services/data/cloudflare-r2'
+// Add dedicated import for OpenAI service
+import { openaiService } from '@/services/open-ai'
 // Data processing types
-export interface ProcessedData {
-  id: string
-  projectId: string
-  sourceEmailId: string
-  processedAt: Date
-  // R2 URLs for OpenAI outputs
-  summaryFileUrl: string
-  visualizationUrls: string[]
-  // R2 URLs for original attachments
-  attachmentUrls: string[]
-  // Metadata about attachments
-  attachments: {
-    name: string
-    type: string
-    url: string
-  }[]
-}
+import type { PROCESSED_DATA__DYNAMODB } from '@/types'
+import { dynamoService } from '@/services/data'
 
 interface AttachmentMetadata {
   name: string
@@ -46,9 +28,15 @@ interface AttachmentMetadata {
 }
 
 /**
- * @dev Data processing service
- * @notice This service is used to the process JSON email data from an email sent via a Postmark Inbound Webhook and store it in a DynamoDB table
- * @example ```ts
+ * @dev Data processing service for handling email data
+ * @notice This service processes incoming email data from Postmark Inbound 
+ *  webhooks, including:
+ * - Storing attachments in Cloudflare R2
+ * - Analyzing content using OpenAI
+ * - Generating visualizations
+ * - Storing processed data in DynamoDB
+ * @example
+ * ```ts
  * const processedData = await dataProcessingService.processEmailData(email)
  * ```
  */
@@ -60,15 +48,12 @@ class DataProcessingService {
    */
   async processEmailData(
     email: ProcessedInboundJson
-  ): Promise<ProcessedData> {
-    const { firestore } = initializeFirebase()
-
+  ): Promise<PROCESSED_DATA__DYNAMODB> {
     // Initialize processed data
-    const processedData: ProcessedData = {
-      id: this.generateId(),
-      projectId: email.projectId,
+    const processedData: PROCESSED_DATA__DYNAMODB = {
+      id: email.projectId,
       sourceEmailId: email.id,
-      processedAt: new Date(),
+      processedAtTimestamp: Date.now(),
       summaryFileUrl: '',
       visualizationUrls: [],
       attachmentUrls: [],
@@ -78,15 +63,17 @@ class DataProcessingService {
     try {
       // Process attachments and store in R2
       if (email.attachments.length > 0) {
+        const attachments = email.attachments.map(att => ({
+          Name: att.name,
+          Content: att.content || '',
+          ContentType: att.type,
+          ContentLength: att.size
+        }))
+
         const processedAttachments = await this.processAttachments(
           email.projectId,
           email.id,
-          email.attachments.map(att => ({
-            Name: att.name,
-            Content: att.content || '',
-            ContentType: att.type,
-            ContentLength: att.size
-          }))
+          attachments,
         )
         
         processedData.attachments = processedAttachments
@@ -94,20 +81,26 @@ class DataProcessingService {
       }
 
       // Use OpenAI to analyze the data
+      const attachments = processedData.attachments.map(att => ({
+        name: att.name,
+        type: att.type,
+        content: att.url // Pass the URL instead of content since we're storing files in R2
+      }))
+
       const analysisResult = await openaiService.analyzeData(
         email.textContent,
-        processedData.attachments.map(att => ({
-          name: att.name,
-          type: att.type,
-          content: att.url // Pass the URL instead of content since we're storing files in R2
-        }))
+        attachments,
       )
 
       // Store OpenAI outputs in R2
+      const key = `${email.projectId}/${email.id}/summary.txt`
+      const base64Data = analysisResult.textContent
+      const contentType = 'text/plain'
+
       const summaryFileUrl = await r2Service.storeFile(
-        `${email.projectId}/${email.id}/summary.txt`,
-        analysisResult.textContent,
-        'text/plain'
+        key,
+        base64Data,
+        contentType,
       )
 
       const visualizationUrls = await Promise.all(
@@ -124,12 +117,22 @@ class DataProcessingService {
       processedData.summaryFileUrl = summaryFileUrl
       processedData.visualizationUrls = visualizationUrls
 
-      // Store the processed data in Firestore
-      const reference = collection(firestore, 'processedData')
-      await addDoc(reference, processedData)
+      // Prepare DynamoDB item (id is projectId)
+      const dynamoItem: PROCESSED_DATA__DYNAMODB = {
+        id: email.projectId,
+        sourceEmailId: email.id,
+        processedAtTimestamp: processedData.processedAtTimestamp,
+        summaryFileUrl,
+        visualizationUrls,
+        attachmentUrls: processedData.attachmentUrls,
+        attachments: processedData.attachments,
+      }
+
+      // Persist via DynamoService helper
+      await dynamoService.saveProcessedData(dynamoItem)
 
       // Update project status
-      await this.updateProjectStatus(firestore, email.projectId)
+      await this.updateProjectStatus(email.projectId)
 
       return processedData
     } catch (error) {
@@ -139,7 +142,7 @@ class DataProcessingService {
   }
 
   /**
-   * Process attachments and store in R2
+   * @dev Process attachments and store in R2
    * @param projectId - The project ID
    * @param emailId - The email ID
    * @param attachments - The attachments to process
@@ -181,7 +184,7 @@ class DataProcessingService {
   }
 
   /**
-   * Convert base64 to file
+   * @dev Convert base64 to file
    * @param base64 - The base64 encoded content
    * @param contentType - The content type of the file
    * @returns The file content
@@ -192,65 +195,63 @@ class DataProcessingService {
   }
 
   /**
-   * Update project status in Firestore
-   * @param db {Firestore} - Firestore instance
-   * @param projectId {string} - The project ID
+   * @dev Update project status in DynamoDB
+   * @param projectId - The project ID
    */
-  private async updateProjectStatus(
-    db: Firestore,
-    projectId: string,
-  ): Promise<void> {
-    const projectsRef = collection(db, 'projects')
-    const q = query(projectsRef, where('id', '==', projectId))
-    const projectSnapshot = await getDocs(q)
-
-    if (!projectSnapshot.empty) {
-      const projectDoc = projectSnapshot.docs[0]
-
-      await updateDoc(
-        doc(db, 'projects', projectDoc.id), 
-        {
-          status: 'active',
-          emailCount: (projectDoc.data().emailCount || 0) + 1,
-          lastActivity: new Date(),
-        }
-      )
+  private async updateProjectStatus(projectId: string): Promise<void> {
+    const TableName = DYNAMODB_TABLE_NAMES.projects
+    const Key = { id: projectId }
+    const UpdateExpression = 'set status = :status, emailCount = emailCount + :inc, lastActivity = :lastActivity'
+    const ExpressionAttributeValues = {
+      ':status': 'active',
+      ':inc': 1,
+      ':lastActivity': Date.now()
     }
+
+    const input: UpdateCommandInput = {
+      TableName,
+      Key,
+      UpdateExpression,
+      ExpressionAttributeValues,
+    }
+    const command = new UpdateCommand(input)
+
+    await ddbDocClient.send(command)
   }
 
   /**
-   * Get recent processed data for a project
-   * @param projectId {string} - The project ID
-   * @param limitCount {number} - The number of records to return
+   * @dev Get recent processed data for a project
+   * @param projectId - The project ID
+   * @param limitCount - The number of records to return
    * @returns The processed data
    */
   async getProjectData(
     projectId: string,
     limitCount = 10,
-  ): Promise<ProcessedData[]> {
-    const { firestore } = initializeFirebase()
+  ): Promise<PROCESSED_DATA__DYNAMODB[]> {
+    const TableName = DYNAMODB_TABLE_NAMES.processedData
+    const KeyConditionExpression = 'id = :projectId'
+    const ExpressionAttributeValues = {
+      ':projectId': projectId
+    }
+    const ScanIndexForward = false // Sort in descending order
+    const Limit = limitCount
 
-    const q = query(
-      collection(firestore, 'processedData'),
-      where('projectId', '==', projectId),
-      orderBy('processedAt', 'desc'),
-      limit(limitCount),
-    )
+    const input: QueryCommandInput = {
+      TableName,
+      KeyConditionExpression,
+      ExpressionAttributeValues,
+      ScanIndexForward,
+      Limit,
+    }
+    const command = new QueryCommand(input)
+    const response = await ddbDocClient.send(command)
 
-    const snapshot = await getDocs(q)
-
-    return snapshot.docs.map(
-      (doc): ProcessedData => (
-        { 
-          id: doc.id, 
-          ...doc.data() 
-        }
-      ) as ProcessedData,
-    )
+    return (response.Items || []) as PROCESSED_DATA__DYNAMODB[]
   }
 
   /**
-   * Generate a unique ID
+   * @dev Generate a unique ID
    * @returns The unique ID
    */
   private generateId(): string {
@@ -261,5 +262,6 @@ class DataProcessingService {
   }
 }
 
+
 export const dataProcessingService = new DataProcessingService()
-export default dataProcessingService
+export default dataProcessingService 

@@ -3,19 +3,17 @@
 'use client'
 
 // Externals
+import {
+  BarChart2,
+  ChevronLeft,
+  Copy,
+  Mail,
+  Settings
+} from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import React, { useState, useEffect } from 'react'
-import { 
-  Copy, 
-  Mail, 
-  Settings,
-  BarChart2, 
-  ChevronLeft, 
-  ExternalLink,
-} from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 // Locals
-import { ProcessedData } from '@/services'
 import EmailPreview from '@/components/Previews/Email'
 import DashboardPreview from '@/components/Previews/Dashboard'
 
