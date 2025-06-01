@@ -247,9 +247,6 @@ class DynamoService {
   }
 }
 
-/* ──────────────── Domain Types ──────────────── */
-type ProjectItem = PROJECT__DYNAMODB
-type ProcessedDataItem = PROCESSED_DATA__DYNAMODB
 
 export const dynamoService = new DynamoService()
 export default dynamoService

@@ -155,7 +155,7 @@ const demoDashboards = {
       projectId: 'demo-project-1',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAt: new Date(2025, 2, 15, 9, 35),
+      processedAtTimestamp: new Date(2025, 2, 15, 9, 35).getTime(),
       summary: {
         'Total Sales': '$324,528',
         'Products Sold': 1284,
@@ -181,7 +181,7 @@ const demoDashboards = {
       projectId: 'demo-project-1',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAt: new Date(2025, 2, 14, 15, 50),
+      processedAtTimestamp: new Date(2025, 2, 14, 15, 50).getTime(),
       summary: {
         'Satisfaction Score': '4.2/5',
         'Responses': 752,
@@ -209,7 +209,7 @@ const demoDashboards = {
       projectId: 'demo-project-2',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAt: new Date(2025, 2, 15, 10, 35),
+      processedAtTimestamp: new Date(2025, 2, 15, 10, 35).getTime(),
       summary: {
         'Total Responses': '1,245',
         'Positive Feedback': '78%',
@@ -235,7 +235,7 @@ const demoDashboards = {
       projectId: 'demo-project-2',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAt: new Date(2025, 2, 14, 14, 25),
+      processedAtTimestamp: new Date(2025, 2, 14, 14, 25).getTime(),
       summary: {
         'Survey Responses': 892,
         'Average Rating': '4.3/5',
@@ -274,7 +274,7 @@ const demoDashboards = {
       projectId: 'demo-project-3',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAt: new Date(2025, 2, 15, 11, 20),
+      processedAtTimestamp: new Date(2025, 2, 15, 11, 20).getTime(),
       summary: {
         'Total Surveys': '2,450',
         'Regions Covered': 12,
@@ -300,7 +300,7 @@ const demoDashboards = {
       projectId: 'demo-project-3',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAt: new Date(2025, 2, 14, 16, 35),
+      processedAtTimestamp: new Date(2025, 2, 14, 16, 35).getTime(),
       summary: {
         'Competitors Analyzed': 8,
         'Market Growth': '12.5%',
