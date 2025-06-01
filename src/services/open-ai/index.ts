@@ -1,11 +1,16 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { MODEL } from '@/utils'
+import { getConsoleMetadata, MODEL } from '@/utils'
+
+
+// ----------------------- Console metadata constants --------------------------
+const CONSOLE_LEVEL = 'SERVER'
+const FILE_NAME = 'src/services/open-ai/index.ts'
 
 // Initialize OpenAI client
 const client = new OpenAI({
-  apiKey: process.env['OPENAI_API_KEY']
+  apiKey: process.env.OPENAI_API_KEY,
 })
 
 /**
@@ -74,6 +79,18 @@ class OpenAIService {
         )
       )
 
+      const consoleMetadata: string = getConsoleMetadata(
+        CONSOLE_LEVEL, 
+        true,
+        FILE_NAME, 
+        'analyzeData()'
+      )
+
+      console.log(
+        `${ consoleMetadata  } uploadedFiles: `,
+        uploadedFiles
+      )
+
       const name = 'Data Analysis Assistant'
       const instructions = `You are a data analysis expert. Analyze the provided data and generate visualizations with insights.`
 
@@ -87,8 +104,18 @@ class OpenAIService {
         ],
       } as OpenAI.Beta.Assistants.AssistantCreateParams)
 
+      console.log(
+        `${ consoleMetadata  } assistant: `,
+        assistant
+      )
+
       // 3. Create a thread
       const thread = await client.beta.threads.create()
+
+      console.log(
+        `${ consoleMetadata  } initialized thread: `,
+        thread
+      )
 
       // 4. Add the analysis prompt and file attachments to the thread
       await client.beta.threads.messages.create(
@@ -110,6 +137,11 @@ class OpenAIService {
         }
       )
 
+      console.log(
+        `${ consoleMetadata  } thread AFTER messages.create(): `,
+        thread
+      )
+
       // 5. Run the assistant
       const run = await client.beta.threads.runs.createAndPoll(
         thread.id, 
@@ -117,6 +149,11 @@ class OpenAIService {
           assistant_id: assistant.id,
         },
         { pollIntervalMs: 2_000 }
+      )
+
+      console.log(
+        `${ consoleMetadata  } running the assistant with 'createdAndPoll()': `,
+        run
       )
 
       // 6. Poll for completion
@@ -132,18 +169,32 @@ class OpenAIService {
           { thread_id: thread.id }, 
         )
 
+        console.log(
+          `${ consoleMetadata  } runResult with 'retrieve()': `,
+          runResult
+        )
+
         runStatus = runResult.status
-        console.log(`Run status: ${runStatus}`)
+       
+        console.log(
+          `${ consoleMetadata  } runStatus: `, 
+          runStatus
+        )
       }
 
       if (runStatus !== 'completed') {
-        throw new Error(`Run failed with status: ${runStatus}`)
+        throw new Error(`Run failed with status: ${ runStatus }`)
       }
 
       // 7. Get the messages from the thread
       const messages = await client.beta.threads.messages.list(thread.id)
       const assistantMessages = messages.data.filter(
         (msg: OpenAI.Beta.Threads.Message): boolean => msg.role === 'assistant'
+      )
+
+      console.log(
+        `${ consoleMetadata  } assistantMessages are a filtered thread's messages with 'list()': `,
+        assistantMessages
       )
 
       // 8. Process the messages
@@ -171,6 +222,11 @@ class OpenAIService {
           }
         }
       }
+
+      console.log(
+        `${ consoleMetadata  } result after processing the 'assistantMessages': `,
+        result
+      )
 
       // 9. Clean up
       await client.beta.assistants.delete(assistant.id)
