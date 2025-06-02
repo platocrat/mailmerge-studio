@@ -7,13 +7,19 @@ import { Mail, Plus, BarChart2, Users } from 'lucide-react'
 // Locals
 import ProjectCard from '../components/Cards/Project'
 import type { PROJECT__DYNAMODB } from '@/types'
+import { getConsoleMetadata } from '@/utils/misc'
+
+
+const CONSOLE_LEVEL = 'CLIENT'
+const FILE_PATH = 'src/app/page.tsx'
 
 
 const demoProjects: PROJECT__DYNAMODB[] = [
   {
     id: 'demo-project-1',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Sales Dashboard',
-    postmarkInboundEmailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+sales@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 0, 15).getTime(),
     emailCount: 24,
     lastActivity: new Date(2025, 1, 28).getTime(),
@@ -21,8 +27,9 @@ const demoProjects: PROJECT__DYNAMODB[] = [
   },
   {
     id: 'demo-project-2',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Customer Feedback',
-    postmarkInboundEmailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 1, 3).getTime(),
     emailCount: 87,
     lastActivity: new Date(2025, 2, 1).getTime(),
@@ -30,8 +37,9 @@ const demoProjects: PROJECT__DYNAMODB[] = [
   },
   {
     id: 'demo-project-3',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Field Research',
-    postmarkInboundEmailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+research@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 2, 10).getTime(),
     emailCount: 12,
     lastActivity: new Date(2025, 2, 15).getTime(),
@@ -42,17 +50,63 @@ const demoProjects: PROJECT__DYNAMODB[] = [
 export default function _() {
   const [projects, setProjects] = useState<PROJECT__DYNAMODB[]>([])
   const [loading, setLoading] = useState(true)
+  const [session, setSession] = useState<{ user?: any } | null>(null)
 
+  // Simulate session check (replace with real check in production)
   useEffect(() => {
-    const fetchProjects = async () => {
-      setProjects(demoProjects)
-      await new Promise(res => setTimeout(res, 1000))
-      setLoading(false)
-    }
-
-    fetchProjects()
+    // Example: check for a session cookie or call an auth endpoint
+    const isSignedIn = document.cookie.includes('session=')
+    setSession(isSignedIn ? { user: { email: 'user@example.com' } } : null)
   }, [])
 
+  // --------------------------- Async functions -------------------------------
+  async function getProjects() {
+    const API_URL = `/api/projects`
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        cache: 'force-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 200) {
+        const json = await response.json()
+        const userProjects = json.projects || []
+        setProjects([...demoProjects, ...userProjects])
+      } else {
+        setProjects([...demoProjects])
+      }
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'getProjects()'
+      )
+      const errorMessage = `Error fetching projects: `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+
+      setProjects([...demoProjects])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ----------------------------- useEffects ----------------------------------
+  useEffect(() => {
+    const requests = [
+      getProjects(),
+    ]
+
+    Promise.all(requests).then(() => {
+      setLoading(false)
+    })
+  }, [])
+
+  // ----------------------------- Render --------------------------------------
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
       {/* Hero Section */ }
@@ -161,7 +215,24 @@ export default function _() {
           </Link>
         </div>
 
-        { loading ? (
+        {/* Conditional rendering based on session */}
+        { !session?.user ? (
+          <div className='bg-white p-8 rounded-lg shadow-md text-center'>
+            <Mail className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+            <h3 className='text-lg font-medium text-gray-900 mb-2'>
+              { `No projects` }
+            </h3>
+            <p className='text-gray-600 mb-6'>
+              { `Please sign in to view your projects.` }
+            </p>
+            <Link
+              href='/sign-in'
+              className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700'
+            >
+              { `Sign In` }
+            </Link>
+          </div>
+        ) : loading ? (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
             { [1, 2, 3].map(
               i => (
@@ -174,10 +245,10 @@ export default function _() {
               )
             ) }
           </div>
-        ) : (
+        ) :
           projects.length > 0 ? (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-              { projects.map(project => (
+              { projects.map((project: PROJECT__DYNAMODB) => (
                 <ProjectCard key={ project.id } project={ project } />
               )) }
             </div>
@@ -199,7 +270,7 @@ export default function _() {
               </Link>
             </div>
           )
-        ) }
+        }
       </div>
     </div>
   )
