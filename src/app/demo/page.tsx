@@ -8,7 +8,7 @@ import { ChangeEvent, FormEvent, useState } from 'react'
 import type {
   ATTACHMENT__POSTMARK,
   INBOUND_EMAIL__POSTMARK,
-  PROCESSED_INBOUND_EMAIL__DYNAMODB
+  ProcessedInboundEmail
 } from '@/types'
 
 // --------------------------------- Types -------------------------------------
@@ -47,9 +47,9 @@ const _ = () => {
   })
   // Processing status and result
   const [
-    processedData, 
-    setProcessedData
-  ] = useState<PROCESSED_INBOUND_EMAIL__DYNAMODB | null>(null)
+    processedInboundEmail, 
+    setProcessedInboundEmail
+  ] = useState<ProcessedInboundEmail | null>(null)
   const [
     processingStatus, 
     setProcessingStatus
@@ -517,7 +517,7 @@ const _ = () => {
               </div>
             ) }
 
-            { processingStatus === 'success' && processedData && (
+            { processingStatus === 'success' && processedInboundEmail && (
               <div className='py-4'>
                 <div className='bg-green-100 text-green-700 p-4 rounded-lg mb-6'>
                   <h3 className='text-lg font-medium mb-2'>
@@ -530,13 +530,13 @@ const _ = () => {
 
                 <div className='space-y-6'>
                   {/* Summary Section (text) */}
-                  { processedData.summaryFileUrl && (
+                  { processedInboundEmail.summaryFileUrl && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
                         { `Summary` }
                       </h4>
                       <iframe 
-                        src={ processedData.summaryFileUrl }
+                        src={ processedInboundEmail.summaryFileUrl }
                         className='w-full h-64 border-0'
                         title='Summary'
                       />
@@ -544,14 +544,14 @@ const _ = () => {
                   ) }
 
                   {/* Visualization Images */}
-                  { processedData.visualizationUrls && 
-                    processedData.visualizationUrls.length > 0 && (
+                  { processedInboundEmail.visualizationUrls && 
+                    processedInboundEmail.visualizationUrls.length > 0 && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
                         { `Data Visualizations` }
                       </h4>
                       <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                        { processedData.visualizationUrls.map((url: string, idx: number) => (
+                        { processedInboundEmail.visualizationUrls.map((url: string, idx: number) => (
                           <div 
                             key={idx} 
                             className='border border-gray-200 rounded-lg overflow-hidden'
@@ -568,14 +568,14 @@ const _ = () => {
                   ) }
 
                   {/* Attachments Section */}
-                  { processedData.attachmentUrls && 
-                    processedData.attachmentUrls.length > 0 && (
+                  { processedInboundEmail.attachmentUrls && 
+                    processedInboundEmail.attachmentUrls.length > 0 && (
                     <div className='bg-white rounded-lg shadow p-4'>
                       <h4 className='text-md font-medium text-gray-900 mb-3'>
                         { `Processed Attachments` }
                       </h4>
                       <div className='space-y-2'>
-                        { processedData.attachmentUrls.map((
+                        { processedInboundEmail.attachmentUrls.map((
                           url: string, 
                           index: number
                         ) => (

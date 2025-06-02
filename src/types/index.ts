@@ -15,8 +15,9 @@ export interface DATA_ANALYSIS_RESULT__OPENAI {
   imageFiles: string[]
 }
 
-export interface PROCESSED_INBOUND_EMAIL__DYNAMODB {
+export interface ProcessedInboundEmail {
   id: string               // Project ID (used as DynamoDB Partition Key)
+  // accountId: string // DynamoDB Sort Key
   sourceEmailId: string    // Original email ID
   processedAt: number // Timestamp
   fromEmail: string
@@ -86,7 +87,7 @@ export interface INBOUND_EMAIL__POSTMARK {
   }[] | []
 }
 
-export interface ProcessedInboundEmail {
+export interface ExtractedInboundEmailData {
   id: string
   projectId: string
   fromEmail: string
@@ -115,7 +116,7 @@ export interface PROJECT__DYNAMODB {
   createdAt: number // Unix epoch (ms) when created – serves as Sort Key if needed
   status: 'Active' | 'Inactive' // Current state of the project
   emailCount?: number // Total inbound emails processed
-  emails?: PROCESSED_INBOUND_EMAIL__DYNAMODB[] // Inbound emails processed
+  emails?: ProcessedInboundEmail[] // Processed Postmark inbound emails
   description?: string // Optional description
   lastActivity?: number // Timestamp of last processed email
 }

@@ -4,8 +4,8 @@ import { Attachment, Client, Message } from 'postmark'
 // Locals
 import type {
   ATTACHMENT__POSTMARK,
+  ExtractedInboundEmailData,
   INBOUND_EMAIL__POSTMARK,
-  ProcessedInboundEmail
 } from '@/types'
 import { getConsoleMetadata } from '@/utils/misc'
 
@@ -35,13 +35,13 @@ class PostmarkService {
   }
 
   /**
-   * @dev Processes a Postmark inbound email
+   * @dev Extracts data from a Postmark inbound email
    * @param json - Postmark inbound email represented as a JSON object
-   * @returns Processed inbound email represented as a JSON object
+   * @returns Extracted inbound email data
    */
-  processInboundEmail(
+  extractInboundEmailData(
     json: INBOUND_EMAIL__POSTMARK
-  ): ProcessedInboundEmail {
+  ): ExtractedInboundEmailData {
     // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
     const projectId = this.extractProjectId(json.MessageID)
 

@@ -374,11 +374,56 @@ const _ = () => {
     alert('Email address copied to clipboard!')
   }
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would update the project in Firestore
-    alert('Project updated successfully! (Demo functionality)')
-    setIsEditing(false)
+    if (!projectId) return
+
+    try {
+      const API_URL = `/api/project`
+      const response = await fetch(API_URL, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: projectId,
+          name: editedProject.name,
+          description: editedProject.description,
+        }),
+      })
+
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        true,
+        FILE_PATH,
+        'handleEditSubmit()'
+      )
+      console.log(`${ consoleMetadata } response: `, response)
+
+      if (response.status === 200) {
+        const json = await response.json()
+        const project = json.project
+
+        setProject(project)
+        setEmails(project.emails ?? [])
+        alert('Project updated successfully!')
+        setIsEditing(false)
+      } else {
+        const json = await response.json()
+        const errorMessage = json.error || 'Failed to update project.'
+        alert(errorMessage)
+      }
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'handleEditSubmit()'
+      )
+      const errorMessage = `Failed to update project. Please try again.`
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      alert(errorMessage)
+    }
   }
 
   
@@ -444,10 +489,26 @@ const _ = () => {
         },
       })
 
+      // const consoleMetadata = getConsoleMetadata(
+      //   CONSOLE_LEVEL,
+      //   true,
+      //   FILE_PATH,
+      //   'getProject()'
+      // )
+      // console.log(`${ consoleMetadata } response: `, response)
+
       if (response.status === 200) {
-        const data = await response.json()
-        setProject(data)
-        setEditedProject({ name: data.name, description: data.description ?? '' })
+        const json = await response.json()
+        const project = json.project
+
+        setProject(project)
+        setEmails(project.emails ?? [])
+        setEditedProject(
+          { 
+            name: project.name, 
+            description: project.description ?? '' 
+          }
+        )
       } else {
         setProject(null)
       }
@@ -511,33 +572,6 @@ const _ = () => {
     if (demoEmails[projectId]) {
       setEmails(demoEmails[projectId])
       return
-    }
-
-    try {
-      const API_URL = `/api/emails?projectId=${ projectId }`
-      const response = await fetch(API_URL, {
-        method: 'GET',
-        cache: 'force-cache',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.status === 200) {
-        const data = await response.json()
-        setEmails(data)
-      } else {
-        setEmails([])
-      }
-    } catch (error) {
-      const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
-        false,
-        FILE_PATH,
-        'getEmails()'
-      )
-      const errorMessage = `Error fetching emails: `
-      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
     }
   }
 

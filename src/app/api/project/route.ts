@@ -171,3 +171,88 @@ export async function PUT(req: Request) {
     return NextResponse.json(jsonBody, responseInit)
   }
 }
+
+
+/**
+ * @dev Update a project via a PATCH request to DynamoDB
+ * @param req - The request object
+ * @returns The response object
+ */
+export async function PATCH(req: Request) {
+  try {
+    const { id, name, description } = await req.json()
+
+    if (!id || !name) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'PATCH()'
+      )
+      const errorMessage = `Project ID and name are required!`
+      console.error(`${ consoleMetadata } ${ errorMessage }`)
+
+      const jsonBody = { error: errorMessage }
+      const responseInit = { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+
+      return NextResponse.json(jsonBody, responseInit)
+    }
+
+    // Update the project in DynamoDB
+    const updateExpr = 'SET #name = :name, description = :description'
+    const exprAttrVals = {
+      ':name': name,
+      ':description': description ?? '',
+    }
+    // DynamoService.updateItem only supports 4 arguments (no 
+    // ExpressionAttributeNames) So use 'name' directly in the update expression
+    const updateExprFixed = 'SET name = :name, description = :description'
+
+    await dynamoService.updateItem(
+      DYNAMODB_TABLE_NAMES.projects,
+      { id },
+      updateExprFixed,
+      exprAttrVals
+    )
+
+    // Fetch the updated project
+    const updatedProject = await dynamoService.getItem(
+      DYNAMODB_TABLE_NAMES.projects,
+      { id }
+    )
+
+    const jsonBody = { project: updatedProject }
+    const responseInit = { 
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+
+    return NextResponse.json(jsonBody, responseInit)
+  } catch (error) {
+    const consoleMetadata = getConsoleMetadata(
+      CONSOLE_LEVEL,
+      false,
+      FILE_PATH,
+      'PATCH()'
+    )
+    const errorMessage = `Error updating project: `
+    console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+
+    const jsonBody = { error: errorMessage }
+    const responseInit = { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+
+    return NextResponse.json(jsonBody, responseInit)
+  }
+}

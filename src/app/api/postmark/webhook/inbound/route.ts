@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 // Locals
 import type { 
   INBOUND_EMAIL__POSTMARK,
-  PROCESSED_INBOUND_EMAIL__DYNAMODB,
+  ProcessedInboundEmail,
 } from '@/types'
 import { postmarkService } from '@/services'
 import { dataProcessingService } from '@/services/data/processing-service'
@@ -34,30 +34,34 @@ export async function POST(request: NextRequest) {
     // }
     
     // Parse the request body
-    const webhookJson: INBOUND_EMAIL__POSTMARK = await request.json()
-    console.log(`webhookJson:`, JSON.stringify(webhookJson, null, 2))
-
-    // Process the inbound email using PostmarkService
-    const processedInboundEmail = postmarkService.processInboundEmail(
-      webhookJson
+    const postmarkInboundEmail: INBOUND_EMAIL__POSTMARK = await request.json()
+    console.log(
+      `postmarkInboundEmail: `,
+      JSON.stringify(postmarkInboundEmail, null, 2)
     )
-    console.log('processedInboundEmail: ', processedInboundEmail)
+
+    // Extract the inbound email data using PostmarkService
+    const extractedInboundEmailData = postmarkService.extractInboundEmailData(
+      postmarkInboundEmail
+    )
+    console.log('extractedInboundEmailData: ', extractedInboundEmailData)
 
     // Process the email data using DataProcessingService
-    const processedData: PROCESSED_INBOUND_EMAIL__DYNAMODB = 
-      await dataProcessingService.processEmail(processedInboundEmail)
-
-    console.log('processedData: ', processedData)
+    const processedInboundEmail: ProcessedInboundEmail = 
+      await dataProcessingService.processInboundEmailData(
+        extractedInboundEmailData
+      )
+    console.log('processedInboundEmail: ', processedInboundEmail)
   
     const jsonBody = {
       success: true,
       message: 'Email processed successfully',
       data: {
-        ...processedData,
+        ...processedInboundEmail,
         // Include text content and image files for display
-        summaryFileUrl: processedData.summaryFileUrl,
-        visualizationUrls: processedData.visualizationUrls,
-        attachmentUrls: processedData.attachmentUrls
+        summaryFileUrl: processedInboundEmail.summaryFileUrl,
+        visualizationUrls: processedInboundEmail.visualizationUrls,
+        attachmentUrls: processedInboundEmail.attachmentUrls
       }
     }
 

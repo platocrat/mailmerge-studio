@@ -12,11 +12,11 @@ import {
 } from '@/utils'
 import type { 
   ATTACHMENT__POSTMARK,
-  PROCESSED_INBOUND_EMAIL__DYNAMODB,
-  ProcessedInboundEmail, 
+  ProcessedInboundEmail,
   AttachmentMetadata,
   STORED_OPENAI_URLS__R2,
   DATA_ANALYSIS_RESULT__OPENAI,
+  ExtractedInboundEmailData,
 } from '@/types'
 import { r2Service } from '@/services/data/cloudflare-r2'
 // Add dedicated import for OpenAI service
@@ -34,28 +34,29 @@ import { dynamoService } from '@/services/data'
  * - Storing processed data in DynamoDB
  * @example
  * ```ts
- * const processedData = await dataProcessingService.processEmailData(email)
+ * const processedInboundEmail: PROCESSED_INBOUND_EMAIL__DYNAMODB = 
+ *   await dataProcessingService.processInboundEmailData(extractedEmailData)
  * ```
  */
 class DataProcessingService {
   /**
    * Process data from an email
-   * @param email - The processed inbound email represented as a JSON object
-   * @returns The processed data
+   * @param extractedEmailData - The extracted inbound email data
+   * @returns The processed inbound email data
    */
-  async processEmail(
-    email: ProcessedInboundEmail
-  ): Promise<PROCESSED_INBOUND_EMAIL__DYNAMODB> {
+  async processInboundEmailData(
+    extractedEmailData: ExtractedInboundEmailData
+  ): Promise<ProcessedInboundEmail> {
     // Initialize processed data
-    const processedData: PROCESSED_INBOUND_EMAIL__DYNAMODB = {
-      id: email.projectId,
-      sourceEmailId: email.id,
+    const processedInboundEmail: ProcessedInboundEmail = {
+      id: extractedEmailData.projectId,
+      sourceEmailId: extractedEmailData.id,
       processedAt: Date.now(),
-      fromEmail: email.fromEmail,
-      fromName: email.fromName,
-      subject: email.subject,
-      textContent: email.textBody,
-      receivedAt: email.receivedAt,
+      fromEmail: extractedEmailData.fromEmail,
+      fromName: extractedEmailData.fromName,
+      subject: extractedEmailData.subject,
+      textContent: extractedEmailData.textBody,
+      receivedAt: extractedEmailData.receivedAt,
       summaryFileUrl: '',
       visualizationUrls: [],
       attachmentUrls: [],
@@ -64,27 +65,32 @@ class DataProcessingService {
 
     try {
       // Process attachments and store in R2
-      if (email.attachments.length > 0) {
-        const attachments = email.attachments.map(att => ({
-          Name: att.name,
-          Content: att.content || '',
-          ContentType: att.type,
-          ContentLength: att.size
+      if (extractedEmailData.attachments.length > 0) {
+        const attachments = extractedEmailData.attachments.map((
+          attachment
+        ) => ({
+          Name: attachment.name,
+          Content: attachment.content || '',
+          ContentType: attachment.type,
+          ContentLength: attachment.size
         }))
 
         const processedAttachments = await DataProcessingService.R2.processAttachments(
-          email.projectId,
-          email.id,
+          extractedEmailData.projectId,
+          extractedEmailData.id,
           attachments,
         )
-        processedData.attachments = processedAttachments
-        processedData.attachmentUrls = processedAttachments.map(a => a.url)
+
+        processedInboundEmail.attachments = processedAttachments
+        processedInboundEmail.attachmentUrls = processedAttachments.map(
+          (a: AttachmentMetadata): string => a.url
+        )
       }
 
       // Use OpenAI to analyze the data
       const analysisResult = await DataProcessingService.OpenAI.analyzeEmail(
-        email.textBody,
-        processedData.attachments
+        extractedEmailData.textBody,
+        processedInboundEmail.attachments
       )
 
       // Store OpenAI outputs in R2
@@ -92,36 +98,45 @@ class DataProcessingService {
         summaryFileUrl, 
         visualizationUrls
       } = await DataProcessingService.R2.storeOpenAiOutputs(
-        email.projectId,
-        email.id,
+        extractedEmailData.projectId,
+        extractedEmailData.id,
         analysisResult
       )
 
       // Update processed data with R2 URLs
-      processedData.summaryFileUrl = summaryFileUrl
-      processedData.visualizationUrls = visualizationUrls
+      processedInboundEmail.summaryFileUrl = summaryFileUrl
+      processedInboundEmail.visualizationUrls = visualizationUrls
 
-      // Prepare new processed inbound email entry to be saved in DynamoDB 
-      // (id is projectId)
-      await DataProcessingService.DynamoDB.saveProcessedData({
-        id: email.projectId,
-        sourceEmailId: email.id,
-        processedAt: processedData.processedAt,
-        fromEmail: email.fromEmail,
-        fromName: email.fromName,
-        subject: email.subject,
-        textContent: email.textBody,
-        receivedAt: email.receivedAt,
+      // Prepare new processed inbound email entry
+      const processedInboundEmailItem: ProcessedInboundEmail = {
+        id: extractedEmailData.projectId, // DynamoDB Partition Key
+        // accountId: extractedEmailData.accountId, // DynamoDB Sort Key
+        sourceEmailId: extractedEmailData.id,
+        processedAt: processedInboundEmail.processedAt,
+        fromEmail: extractedEmailData.fromEmail,
+        fromName: extractedEmailData.fromName,
+        subject: extractedEmailData.subject,
+        textContent: extractedEmailData.textBody,
+        receivedAt: extractedEmailData.receivedAt,
         summaryFileUrl,
         visualizationUrls,
-        attachmentUrls: processedData.attachmentUrls,
-        attachments: processedData.attachments,
-      })
+        attachmentUrls: processedInboundEmail.attachmentUrls,
+        attachments: processedInboundEmail.attachments,
+      }
+      // Save processed inbound email to DynamoDB
+      await dynamoService.addEmailToProject(
+        extractedEmailData.projectId,
+        processedInboundEmailItem
+      );
 
       // Update project status
-      await dynamoService.updateProjectStatus(email.projectId, 'Active', 1)
+      await dynamoService.updateProjectStatus(
+        extractedEmailData.projectId, 
+        'Active', 
+        1
+      )
 
-      return processedData
+      return processedInboundEmail
     } catch (error) {
       console.error('Error processing email data:', error)
       throw error
@@ -261,18 +276,6 @@ class DataProcessingService {
       )
 
       return analysisResult
-    }
-  }
-
-  static DynamoDB = class {
-    /**
-     * @dev Save processed data
-     * @param item - The processed data
-     */
-    static async saveProcessedData(
-      item: PROCESSED_INBOUND_EMAIL__DYNAMODB
-    ): Promise<void> {
-      await dynamoService.saveProcessedData(item)
     }
   }
 }

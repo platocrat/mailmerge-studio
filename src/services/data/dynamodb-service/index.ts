@@ -27,7 +27,7 @@ import {
 } from '@/utils'
 import type {
   PROJECT__DYNAMODB,
-  PROCESSED_INBOUND_EMAIL__DYNAMODB,
+  ProcessedInboundEmail,
 } from '@/types'
 
 
@@ -287,46 +287,32 @@ class DynamoService {
   /* -------- Processed-data helpers -------- */
 
   /**
-   * @dev Save processed data to DynamoDB
-   * @param item - The processed data item
-   */
-  async saveProcessedData(item: PROCESSED_INBOUND_EMAIL__DYNAMODB) {
-    const TableName = DYNAMODB_TABLE_NAMES.processedData
-    await this.putItem(TableName, item)
-  }
-
-  /**
-   * @dev Get processed data from DynamoDB
-   * @param id - The ID of the processed data
-   * @returns The processed data
-   */
-  async getProcessedData(id: string) {
-    const TableName = DYNAMODB_TABLE_NAMES.processedData
-    const Key = { id }
-    return this.getItem<PROCESSED_INBOUND_EMAIL__DYNAMODB>(TableName, Key)
-  }
-
-  /**
-   * @dev List processed data for a project from DynamoDB
+   * @dev Add a processed inbound email to a project's `emails` array in DynamoDB
    * @param projectId - The ID of the project
-   * @param limit - The limit of items to return
-   * @returns The processed data
+   * @param email - The processed inbound email
    */
-  async listProcessedDataForProject(projectId: string, limit = 10) {
-    const TableName = DYNAMODB_TABLE_NAMES.processedData
-    const KeyConditionExpression = 'id = :pid'
-    const ExpressionAttributeValues = { ':pid': projectId }
-    const Limit = limit
-    const ScanForward = false // latest first
+  async addEmailToProject(
+    projectId: string, 
+    email: ProcessedInboundEmail
+  ) {
+    const TableName = DYNAMODB_TABLE_NAMES.projects
+    const Key = { id: projectId }
+    // Fetch the project
+    const project = await this.getProject(projectId)
 
-    return this.queryItems<PROCESSED_INBOUND_EMAIL__DYNAMODB>(
-      TableName,
-      KeyConditionExpression,
-      ExpressionAttributeValues,
-      undefined,
-      Limit,
-      ScanForward,
-    )
+    if (!project) throw new Error('Project not found!')
+
+    const emails = project.emails ?? []
+    emails.unshift(email) // Add to front for latest first
+
+    const updateExpr = 'SET emails = :emails, emailCount = :emailCount, lastActivity = :lastActivity'
+    const exprAttrVals = {
+      ':emails': emails,
+      ':emailCount': emails.length,
+      ':lastActivity': Date.now(),
+    }
+
+    await this.updateItem(TableName, Key, updateExpr, exprAttrVals)
   }
 }
 
