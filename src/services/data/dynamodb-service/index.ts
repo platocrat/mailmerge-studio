@@ -23,14 +23,19 @@ import {
 import { 
   ddbDocClient,
   DYNAMODB_TABLE_NAMES,
+  getConsoleMetadata,
 } from '@/utils'
 import type {
   PROJECT__DYNAMODB,
-  PROCESSED_DATA__DYNAMODB,
+  PROCESSED_INBOUND_EMAIL__DYNAMODB,
 } from '@/types'
 
-/* ──────────────── Generic helpers ──────────────── */
 
+const FILE_PATH = 'src/services/data/dynamodb-service/index.ts'
+const CONSOLE_LEVEL = 'SERVER'
+
+
+/* ──────────────── Generic helpers ──────────────── */
 export interface DynamoItem {
   id: string            // partition-key for both tables
   [key: string]: any
@@ -47,7 +52,20 @@ class DynamoService {
   async putItem<T extends DynamoItem>(table: string, item: T): Promise<void> {
     const input: PutCommandInput = { TableName: table, Item: item }
     const command = new PutCommand(input)
-    await ddbDocClient.send(command)
+
+    try {
+      await ddbDocClient.send(command)
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL, 
+        false, 
+        FILE_PATH,
+        'DynamoService.putItem()'
+      )
+      const errorMessage = `Failed to PUT item in table '${ table }': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /**
@@ -62,8 +80,21 @@ class DynamoService {
   ): Promise<T | undefined> {
     const input: GetCommandInput = { TableName: table, Key: key }
     const command = new GetCommand(input)
-    const { Item } = await ddbDocClient.send(command)
-    return Item as T | undefined
+
+    try {
+      const { Item } = await ddbDocClient.send(command)
+      return Item as T | undefined
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'DynamoService.getItem()'
+      )
+      const errorMessage = `Failed to GET item from table '${ table }': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /**
@@ -93,8 +124,21 @@ class DynamoService {
       ...(limit && { Limit: limit }),
     }
     const command = new QueryCommand(input)
-    const { Items } = await ddbDocClient.send(command)
-    return (Items || []) as T[]
+
+    try {
+      const { Items } = await ddbDocClient.send(command)
+      return (Items || []) as T[]
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'DynamoService.queryItems()'
+      )
+      const errorMessage = `Failed to QUERY items from table '${ table }': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /**
@@ -118,8 +162,21 @@ class DynamoService {
       ...(limit && { Limit: limit }),
     }
     const command = new ScanCommand(input)
-    const { Items } = await ddbDocClient.send(command)
-    return (Items || []) as T[]
+
+    try {
+      const { Items } = await ddbDocClient.send(command)
+      return (Items || []) as T[]
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'DynamoService.scanItems()'
+      )
+      const errorMessage = `Failed to SCAN items from table '${ table }': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /**
@@ -143,7 +200,20 @@ class DynamoService {
       ExpressionAttributeValues: exprAttrVals,
     }
     const command = new UpdateCommand(input)
-    await ddbDocClient.send(command)
+
+    try {
+      await ddbDocClient.send(command)
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'DynamoService.updateItem()'
+      )
+      const errorMessage = `Failed to UPDATE item in table '${table}': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /**
@@ -158,7 +228,20 @@ class DynamoService {
   ): Promise<void> {
     const input: DeleteCommandInput = { TableName: table, Key: key }
     const command = new DeleteCommand(input)
-    await ddbDocClient.send(command)
+
+    try {
+      await ddbDocClient.send(command)
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'DynamoService.deleteItem()'
+      )
+      const errorMessage = `Failed to DELETE item from table '${table}': `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+      throw new Error(error as string)
+    }
   }
 
   /* -------- Project-specific helpers -------- */
@@ -182,7 +265,7 @@ class DynamoService {
    */
   async updateProjectStatus(
     projectId: string,
-    status: 'active' | 'inactive',
+    status: 'Active' | 'Inactive',
     emailsInc = 1,
   ) {
     const TableName = DYNAMODB_TABLE_NAMES.projects
@@ -207,7 +290,7 @@ class DynamoService {
    * @dev Save processed data to DynamoDB
    * @param item - The processed data item
    */
-  async saveProcessedData(item: PROCESSED_DATA__DYNAMODB) {
+  async saveProcessedData(item: PROCESSED_INBOUND_EMAIL__DYNAMODB) {
     const TableName = DYNAMODB_TABLE_NAMES.processedData
     await this.putItem(TableName, item)
   }
@@ -220,7 +303,7 @@ class DynamoService {
   async getProcessedData(id: string) {
     const TableName = DYNAMODB_TABLE_NAMES.processedData
     const Key = { id }
-    return this.getItem<PROCESSED_DATA__DYNAMODB>(TableName, Key)
+    return this.getItem<PROCESSED_INBOUND_EMAIL__DYNAMODB>(TableName, Key)
   }
 
   /**
@@ -236,7 +319,7 @@ class DynamoService {
     const Limit = limit
     const ScanForward = false // latest first
 
-    return this.queryItems<PROCESSED_DATA__DYNAMODB>(
+    return this.queryItems<PROCESSED_INBOUND_EMAIL__DYNAMODB>(
       TableName,
       KeyConditionExpression,
       ExpressionAttributeValues,

@@ -6,9 +6,9 @@ import { FileText as FileIcon, Mail, Plus, Send, Trash2 } from 'lucide-react'
 import { ChangeEvent, FormEvent, useState } from 'react'
 // Locals
 import type {
-  PostmarkAttachment,
-  PostmarkInboundWebhookJson,
-  PROCESSED_DATA__DYNAMODB,
+  ATTACHMENT__POSTMARK,
+  INBOUND_EMAIL__POSTMARK,
+  PROCESSED_INBOUND_EMAIL__DYNAMODB
 } from '@/types'
 
 // --------------------------------- Types -------------------------------------
@@ -35,7 +35,7 @@ const _ = () => {
   const [ 
     formData, 
     setFormData 
-  ] = useState<Partial<PostmarkInboundWebhookJson>>({
+  ] = useState<Partial<INBOUND_EMAIL__POSTMARK>>({
     FromName: 'Demo User',
     From: 'user@example.com',
     To: `${ process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH }@inbound.postmarkapp.com`,
@@ -49,7 +49,7 @@ const _ = () => {
   const [
     processedData, 
     setProcessedData
-  ] = useState<PROCESSED_DATA__DYNAMODB | null>(null)
+  ] = useState<PROCESSED_INBOUND_EMAIL__DYNAMODB | null>(null)
   const [
     processingStatus, 
     setProcessingStatus
@@ -65,7 +65,7 @@ const _ = () => {
   ) => {
     const { name, value } = e.target
     setFormData(
-      (prev: Partial<PostmarkInboundWebhookJson>) => (
+      (prev: Partial<INBOUND_EMAIL__POSTMARK>) => (
         { 
           ...prev, 
           [name]: value 
@@ -155,7 +155,7 @@ const _ = () => {
         attachments.map(
           async (
             attachment: Attachments[number]
-          ): Promise<PostmarkAttachment> => {
+          ): Promise<ATTACHMENT__POSTMARK> => {
             // Read file content as base64
             const content = await new Promise<string>((resolve) => {
               const reader = new FileReader()

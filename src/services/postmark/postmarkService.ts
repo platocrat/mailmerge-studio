@@ -1,12 +1,17 @@
 // Service for handling Postmark webhook data
 // Externals
-import { Client, Message, Attachment } from 'postmark'
+import { Attachment, Client, Message } from 'postmark'
 // Locals
-import type { 
-  PostmarkAttachment, 
-  PostmarkInboundWebhookJson, 
-  ProcessedInboundJson 
+import type {
+  ATTACHMENT__POSTMARK,
+  INBOUND_EMAIL__POSTMARK,
+  ProcessedInboundEmail
 } from '@/types'
+import { getConsoleMetadata } from '@/utils/misc'
+
+// Constants
+const CONSOLE_LEVEL = 'SERVER'
+const FILE_PATH = 'src/services/postmark/postmarkService.ts'
 
 
 // ------------------------- PostmarkService class -----------------------------
@@ -29,10 +34,14 @@ class PostmarkService {
     )
   }
 
-  // Process an inbound webhook from Postmark
-  processInboundWebhookData(
-    json: PostmarkInboundWebhookJson
-  ): ProcessedInboundJson {
+  /**
+   * @dev Processes a Postmark inbound email
+   * @param json - Postmark inbound email represented as a JSON object
+   * @returns Processed inbound email represented as a JSON object
+   */
+  processInboundEmail(
+    json: INBOUND_EMAIL__POSTMARK
+  ): ProcessedInboundEmail {
     // Format: POSTMARK_INBOUND_HASH@inbound.postmarkapp.com
     const projectId = this.extractProjectId(json.MessageID)
 
@@ -47,11 +56,14 @@ class PostmarkService {
 
     const id = json.MessageID
     // Date is a UTC string. Example: 2025-05-28T20:05:55.478Z
-    const receivedAt = new Date(json.Date).toISOString()
+    const receivedAt = new Date(json.Date).getTime()
     const fromEmail = json.From
+    const originalRecipient = json.OriginalRecipient
     const fromName = json.FromName
+    const replyTo = json.ReplyTo
+    const to = json.To
     const subject = json.Subject
-    const textContent = json.TextBody
+    const textBody = json.TextBody
     const htmlBody = json.HtmlBody
     const attachments = processedAttachments
 
@@ -59,9 +71,12 @@ class PostmarkService {
       id,
       projectId,
       fromEmail,
+      originalRecipient,
       fromName,
+      replyTo,
+      to,
       subject,
-      textContent,
+      textBody,
       htmlBody,
       attachments,
       receivedAt,
@@ -93,8 +108,14 @@ class PostmarkService {
 
       await this.client.sendEmail(email)
     } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'PostmarkService.sendDashboardEmail()'
+      )
       const errorMessage = 'Error sending dashboard email: '
-      console.error(errorMessage, error)
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
       throw new Error(error as string)
     }
   }
@@ -107,7 +128,7 @@ class PostmarkService {
       Subject: string
       TextBody?: string
       HtmlBody?: string
-      Attachments?: PostmarkAttachment[]
+      Attachments?: ATTACHMENT__POSTMARK[]
       MessageStream?: string
     }
   ): Promise<{ 
@@ -118,7 +139,7 @@ class PostmarkService {
   }> {
     try {
       const attachments = params.Attachments?.map((
-        attachment: PostmarkAttachment
+        attachment: ATTACHMENT__POSTMARK
       ): Attachment => ({
         Name: attachment.Name,
         Content: attachment.Content,
@@ -139,7 +160,14 @@ class PostmarkService {
 
       return await this.client.sendEmail(message)
     } catch (error) {
-      console.error('Error sending email: ', error)
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'PostmarkService.sendEmail()'
+      )
+      const errorMessage = 'Error sending email: '
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
       throw new Error(error as string)
     }
   }

@@ -3,8 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
 import type { 
-  PostmarkInboundWebhookJson, 
-  PROCESSED_DATA__DYNAMODB
+  INBOUND_EMAIL__POSTMARK,
+  PROCESSED_INBOUND_EMAIL__DYNAMODB,
 } from '@/types'
 import { postmarkService } from '@/services'
 import { dataProcessingService } from '@/services/data/processing-service'
@@ -34,18 +34,19 @@ export async function POST(request: NextRequest) {
     // }
     
     // Parse the request body
-    const webhookJson: PostmarkInboundWebhookJson = await request.json()
+    const webhookJson: INBOUND_EMAIL__POSTMARK = await request.json()
     console.log(`webhookJson:`, JSON.stringify(webhookJson, null, 2))
 
     // Process the inbound email using PostmarkService
-    const processedEmail = postmarkService.processInboundWebhookData(
+    const processedInboundEmail = postmarkService.processInboundEmail(
       webhookJson
     )
-    console.log('processedEmail: ', processedEmail)
+    console.log('processedInboundEmail: ', processedInboundEmail)
 
     // Process the email data using DataProcessingService
-    const processedData: PROCESSED_DATA__DYNAMODB = 
-      await dataProcessingService.processEmailData(processedEmail)
+    const processedData: PROCESSED_INBOUND_EMAIL__DYNAMODB = 
+      await dataProcessingService.processEmail(processedInboundEmail)
+
     console.log('processedData: ', processedData)
   
     const jsonBody = {

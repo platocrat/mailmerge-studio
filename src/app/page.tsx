@@ -6,45 +6,41 @@ import { useState, useEffect } from 'react'
 import { Mail, Plus, BarChart2, Users } from 'lucide-react'
 // Locals
 import ProjectCard from '../components/Cards/Project'
+import type { PROJECT__DYNAMODB } from '@/types'
 
-interface Project {
-  id: string
-  name: string
-  emailAddress: string
-  createdAt: Date
-  emailCount: number
-  lastActivity?: Date
-}
 
-const demoProjects: Project[] = [
+const demoProjects: PROJECT__DYNAMODB[] = [
   {
     id: 'demo-project-1',
     name: 'Sales Dashboard',
-    emailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 0, 15),
+    postmarkInboundEmailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 0, 15).getTime(),
     emailCount: 24,
-    lastActivity: new Date(2025, 1, 28)
+    lastActivity: new Date(2025, 1, 28).getTime(),
+    status: 'Active',
   },
   {
     id: 'demo-project-2',
     name: 'Customer Feedback',
-    emailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 1, 3),
+    postmarkInboundEmailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 1, 3).getTime(),
     emailCount: 87,
-    lastActivity: new Date(2025, 2, 1)
+    lastActivity: new Date(2025, 2, 1).getTime(),
+    status: 'Active',
   },
   {
     id: 'demo-project-3',
     name: 'Field Research',
-    emailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 2, 10),
+    postmarkInboundEmailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 2, 10).getTime(),
     emailCount: 12,
-    lastActivity: new Date(2025, 2, 15)
+    lastActivity: new Date(2025, 2, 15).getTime(),
+    status: 'Active',
   }
 ]
 
 export default function _() {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<PROJECT__DYNAMODB[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 import OpenAI from 'openai'
 // Locals
 import { getConsoleMetadata, MODEL } from '@/utils'
+import { DATA_ANALYSIS_RESULT__OPENAI } from '@/types'
 
 
 // ----------------------- Console metadata constants --------------------------
@@ -12,14 +13,6 @@ const FILE_NAME = 'src/services/open-ai/index.ts'
 const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 })
-
-/**
- * @dev Data analysis result
- */
-interface DataAnalysisResult {
-  textContent: string
-  imageFiles: string[]
-}
 
 /**
  * @dev OpenAI service
@@ -51,14 +44,14 @@ class OpenAIService {
 
   /**
    * @dev Analyze the data and generate visualizations with insights
-   * @param textContent - The text content to analyze
+   * @param textBody - The text body to analyze
    * @param attachments - The attachments to analyze
    * @returns The analysis result
    */
   async analyzeData(
-    textContent: string,
+    textBody: string,
     attachments: { name: string; type: string; content: string }[]
-  ): Promise<DataAnalysisResult> {
+  ): Promise<DATA_ANALYSIS_RESULT__OPENAI> {
     try {
       // 1. Upload files to OpenAI
       const uploadedFiles: string[] = await Promise.all(
@@ -198,7 +191,7 @@ class OpenAIService {
       )
 
       // 8. Process the messages
-      const result: DataAnalysisResult = {
+      const result: DATA_ANALYSIS_RESULT__OPENAI = {
         textContent: '',
         imageFiles: []
       }

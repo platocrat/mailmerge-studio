@@ -57,6 +57,6 @@ const defaultConfig: R2Config = {
   bucket: process.env.R2_BUCKET || 'mailmerge-studio-attachments',
 }
 
-export const r2Service = new R2Service(defaultConfig)
 
+export const r2Service = new R2Service(defaultConfig)
 export default r2Service

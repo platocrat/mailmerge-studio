@@ -12,34 +12,44 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { FC, useEffect, useState } from 'react'
 // Locals
 import EmailPreview from '@/components/Previews/Email'
 import DashboardPreview from '@/components/Previews/Dashboard'
+import type { PROJECT__DYNAMODB } from '@/types'
+import { getConsoleMetadata } from '@/utils'
 
 
-// Demo data
-const demoProjects = {
+// ------------------------------ Constants ------------------------------------
+const FILE_PATH = 'src/app/projects/[projectId]/page.tsx'
+const CONSOLE_LEVEL = 'CLIENT'
+
+// -------------------------------- Types --------------------------------------
+// ------------------------------ Demo data ------------------------------------
+const demoProjects: Record<string, PROJECT__DYNAMODB> = {
   'demo-project-1': {
     id: 'demo-project-1',
     name: 'Sales Dashboard',
-    emailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 0, 15),
+    postmarkInboundEmailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 0, 15).getTime(),
     description: 'Weekly sales reports and customer analytics',
+    status: 'Active',
   },
   'demo-project-2': {
     id: 'demo-project-2',
     name: 'Customer Feedback',
-    emailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 1, 3),
+    postmarkInboundEmailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 1, 3).getTime(),
     description: 'Customer satisfaction surveys and feedback analysis',
+    status: 'Active',
   },
   'demo-project-3': {
     id: 'demo-project-3',
     name: 'Field Research',
-    emailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
-    createdAt: new Date(2025, 2, 10),
+    postmarkInboundEmailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
+    createdAt: new Date(2025, 2, 10).getTime(),
     description: 'Field research data and market insights',
+    status: 'Active',
   }
 }
 
@@ -57,9 +67,9 @@ const demoEmails = {
           name: 'weekly_sales.csv',
           type: 'text/csv',
           size: 24576,
+          url: 'https://example.com/weekly_sales.csv',
         }
       ],
-      spamScore: 0.1,
     },
     {
       id: 'email-2',
@@ -73,9 +83,9 @@ const demoEmails = {
           name: 'satisfaction_results.json',
           type: 'application/json',
           size: 15360,
+          url: 'https://example.com/satisfaction_results.json',
         }
       ],
-      spamScore: 0.2,
     }
   ],
   'demo-project-2': [
@@ -91,9 +101,9 @@ const demoEmails = {
           name: 'q1_feedback.csv',
           type: 'text/csv',
           size: 32768,
+          url: 'https://example.com/q1_feedback.csv',
         }
       ],
-      spamScore: 0.1,
     },
     {
       id: 'email-2',
@@ -107,9 +117,9 @@ const demoEmails = {
           name: 'product_satisfaction.json',
           type: 'application/json',
           size: 20480,
+          url: 'https://example.com/product_satisfaction.json',
         }
       ],
-      spamScore: 0.2,
     }
   ],
   'demo-project-3': [
@@ -125,9 +135,9 @@ const demoEmails = {
           name: 'market_research.csv',
           type: 'text/csv',
           size: 40960,
+          url: 'https://example.com/market_research.csv',
         }
       ],
-      spamScore: 0.1,
     },
     {
       id: 'email-2',
@@ -141,9 +151,9 @@ const demoEmails = {
           name: 'competitor_analysis.json',
           type: 'application/json',
           size: 28672,
+          url: 'https://example.com/competitor_analysis.json',
         }
       ],
-      spamScore: 0.2,
     }
   ]
 }
@@ -155,7 +165,7 @@ const demoDashboards = {
       projectId: 'demo-project-1',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAtTimestamp: new Date(2025, 2, 15, 9, 35).getTime(),
+      processedAt: new Date(2025, 2, 15, 9, 35).getTime(),
       summary: {
         'Total Sales': '$324,528',
         'Products Sold': 1284,
@@ -181,7 +191,7 @@ const demoDashboards = {
       projectId: 'demo-project-1',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAtTimestamp: new Date(2025, 2, 14, 15, 50).getTime(),
+      processedAt: new Date(2025, 2, 14, 15, 50).getTime(),
       summary: {
         'Satisfaction Score': '4.2/5',
         'Responses': 752,
@@ -209,7 +219,7 @@ const demoDashboards = {
       projectId: 'demo-project-2',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAtTimestamp: new Date(2025, 2, 15, 10, 35).getTime(),
+      processedAt: new Date(2025, 2, 15, 10, 35).getTime(),
       summary: {
         'Total Responses': '1,245',
         'Positive Feedback': '78%',
@@ -235,7 +245,7 @@ const demoDashboards = {
       projectId: 'demo-project-2',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAtTimestamp: new Date(2025, 2, 14, 14, 25).getTime(),
+      processedAt: new Date(2025, 2, 14, 14, 25).getTime(),
       summary: {
         'Survey Responses': 892,
         'Average Rating': '4.3/5',
@@ -274,7 +284,7 @@ const demoDashboards = {
       projectId: 'demo-project-3',
       sourceEmailId: 'email-1',
       dataType: 'csv',
-      processedAtTimestamp: new Date(2025, 2, 15, 11, 20).getTime(),
+      processedAt: new Date(2025, 2, 15, 11, 20).getTime(),
       summary: {
         'Total Surveys': '2,450',
         'Regions Covered': 12,
@@ -300,7 +310,7 @@ const demoDashboards = {
       projectId: 'demo-project-3',
       sourceEmailId: 'email-2',
       dataType: 'json',
-      processedAtTimestamp: new Date(2025, 2, 14, 16, 35).getTime(),
+      processedAt: new Date(2025, 2, 14, 16, 35).getTime(),
       summary: {
         'Competitors Analyzed': 8,
         'Market Growth': '12.5%',
@@ -331,36 +341,36 @@ const demoDashboards = {
   ]
 }
 
+
+
+// --------------------------- Client Component --------------------------------
 const _ = () => {
+  // ---------------------------- URL params -----------------------------------
   const { projectId } = useParams<{ projectId: string }>()
+  // ------------------------------ Hooks --------------------------------------
   const router = useRouter()
+  // ------------------------------ State --------------------------------------
   const [
-    activeTab,
+    editedProject, 
+    setEditedProject
+  ] = useState<{ name: string, description: string }>(
+    { name: '', description: '' }
+  )
+  const [
+    activeTab, 
     setActiveTab
   ] = useState<'emails' | 'dashboards' | 'settings'>('dashboards')
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedProject, setEditedProject] = useState({
-    name: '',
-    description: '',
-  })
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [project, setProject] = useState<PROJECT__DYNAMODB | null>(null)
+  const [dashboards, setDashboards] = useState<any[]>([])
+  const [emails, setEmails] = useState<any[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [isEditing, setIsEditing] = useState<boolean>(false)
+  const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
-  // In a real app, we would fetch this data from Firestore
-  const project = demoProjects[projectId as keyof typeof demoProjects]
-  const emails = demoEmails[projectId as keyof typeof demoEmails] || []
-  const dashboards = demoDashboards[projectId as keyof typeof demoDashboards] || []
 
-  useEffect(() => {
-    if (project) {
-      setEditedProject({
-        name: project.name,
-        description: project.description,
-      })
-    }
-  }, [project])
-
+  // -------------------------- Regular functions ------------------------------
   const copyEmailAddress = () => {
-    navigator.clipboard.writeText(project.emailAddress)
+    navigator.clipboard.writeText(project?.postmarkInboundEmailAddress ?? '')
     alert('Email address copied to clipboard!')
   }
 
@@ -371,12 +381,30 @@ const _ = () => {
     setIsEditing(false)
   }
 
+  
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target
+
+    setEditedProject(prev => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+  
+
+  // ---------------------------- Async functions ------------------------------
+  /**
+   * @dev Delete project
+   */
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-      return
-    }
+    const confirmationMessage = `Are you sure you want to delete this project? This action cannot be undone.`
+
+    if (!window.confirm(confirmationMessage)) return
 
     setIsDeleting(true)
+
     try {
       // In a real app, this would delete the project from Firestore
       await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
@@ -389,12 +417,183 @@ const _ = () => {
     }
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setEditedProject(prev => ({
-      ...prev,
-      [name]: value
-    }))
+
+  /**
+   * @dev GET Project from DynamoDB
+   */
+  async function getProject() {
+    setLoading(true)
+
+    if (demoProjects[projectId]) {
+      setProject(demoProjects[projectId])
+      setEditedProject({
+        name: demoProjects[projectId].name,
+        description: demoProjects[projectId].description ?? ''
+      })
+      setLoading(false)
+      return
+    }
+
+    try {
+      const API_URL = `/api/project?projectId=${ projectId }`
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        cache: 'force-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 200) {
+        const data = await response.json()
+        setProject(data)
+        setEditedProject({ name: data.name, description: data.description ?? '' })
+      } else {
+        setProject(null)
+      }
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'getProject()'
+      )
+      const errorMessage = `Error fetching project: `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+  /**
+   * @dev Fetch dashboards
+   */
+  async function getDashboards() {
+    if (demoDashboards[projectId]) {
+      setDashboards(demoDashboards[projectId])
+      return
+    }
+
+    try {
+      const API_URL = `/api/dashboards?projectId=${ projectId }`
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        cache: 'force-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 200) {
+        const data = await response.json()
+        setDashboards(data)
+      } else {
+        setDashboards([])
+      }
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'getDashboards()'
+      )
+      const errorMessage = `Error fetching dashboards: `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+    }
+  }
+
+
+  /**
+   * @dev Fetch emails
+   */
+  async function getEmails() {
+    if (demoEmails[projectId]) {
+      setEmails(demoEmails[projectId])
+      return
+    }
+
+    try {
+      const API_URL = `/api/emails?projectId=${ projectId }`
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        cache: 'force-cache',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.status === 200) {
+        const data = await response.json()
+        setEmails(data)
+      } else {
+        setEmails([])
+      }
+    } catch (error) {
+      const consoleMetadata = getConsoleMetadata(
+        CONSOLE_LEVEL,
+        false,
+        FILE_PATH,
+        'getEmails()'
+      )
+      const errorMessage = `Error fetching emails: `
+      console.error(`${ consoleMetadata } ${ errorMessage }`, error)
+    }
+  }
+
+
+  // ----------------------------- useEffects ----------------------------------
+  // Fetch project on mount
+  useEffect(() => {
+    if (projectId) {
+      const requests = [
+        getProject(),
+        getDashboards(),
+        getEmails(),
+      ]
+
+      Promise.all(requests).then(() => {
+        setLoading(false)
+      })
+    }
+  }, [ projectId ])
+
+
+  // ------------------------------ Rendering ----------------------------------
+  if (loading) {
+    return (
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+        <div className='bg-white p-8 rounded-lg shadow-md text-center'>
+          <h1 className='text-2xl font-semibold text-gray-900 mb-4'>
+            { `Loading...` }
+          </h1>
+        </div>
+      </div>
+    )
+  }
+
+  if (!project) {
+    return (
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+        <button
+          onClick={ () => router.push('/') }
+          className='flex items-center text-blue-600 hover:text-blue-800 mb-6'
+        >
+          <ChevronLeft className='h-4 w-4 mr-1' />
+          { `Back to Projects` }
+        </button>
+        <div className='bg-white p-8 rounded-lg shadow-md text-center'>
+          <h1 className='text-2xl font-semibold text-gray-900 mb-4'>
+            { `Project not found` }
+          </h1>
+          <p className='text-gray-600'>
+            {
+              `The project you are looking for doesn't exist or was just created. Please refresh once it finishes syncing.`
+            }
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -422,7 +621,7 @@ const _ = () => {
             <div className='inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-50'>
               <Mail className='h-4 w-4 text-gray-500 mr-2' />
               <span className='font-mono'>
-                { project.emailAddress }
+                { project.postmarkInboundEmailAddress }
               </span>
               <button
                 onClick={ copyEmailAddress }
@@ -495,7 +694,7 @@ const _ = () => {
               <div className='space-y-8'>
                 { dashboards.map((dashboard) => (
                   <div key={ dashboard.id }>
-                    <DashboardPreview data={ dashboard } />
+                    <DashboardPreview project={ project } />
                   </div>
                 )) }
               </div>
@@ -548,22 +747,22 @@ const _ = () => {
                 <h3 className='text-lg leading-6 font-medium text-gray-900'>
                   { `Project Settings` }
                 </h3>
-                {!isEditing && (
+                { !isEditing && (
                   <div className='flex space-x-3'>
                     <button
                       type='button'
-                      onClick={() => setIsEditing(true)}
+                      onClick={ () => setIsEditing(true) }
                       className='inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                     >
-                      Edit
+                      { `Edit` }
                     </button>
                     <button
                       type='button'
-                      onClick={handleDelete}
-                      disabled={isDeleting}
+                      onClick={ handleDelete }
+                      disabled={ isDeleting }
                       className='inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed'
                     >
-                      {isDeleting ? 'Deleting...' : 'Delete'}
+                      { isDeleting ? 'Deleting...' : 'Delete' }
                     </button>
                   </div>
                 )}
@@ -575,12 +774,12 @@ const _ = () => {
                       { `Project Name` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                      {isEditing ? (
+                      { isEditing ? (
                         <input
                           type='text'
                           name='name'
-                          value={editedProject.name}
-                          onChange={handleInputChange}
+                          value={ editedProject.name }
+                          onChange={ handleInputChange }
                           className='block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
                           required
                         />
@@ -594,12 +793,12 @@ const _ = () => {
                       { `Description` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                      {isEditing ? (
+                      { isEditing ? (
                         <textarea
                           name='description'
-                          rows={3}
-                          value={editedProject.description}
-                          onChange={handleInputChange}
+                          rows={ 3 }
+                          value={ editedProject.description }
+                          onChange={ handleInputChange }
                           className='block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm'
                           required
                         />
@@ -621,7 +820,7 @@ const _ = () => {
                       { `Email Address` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-mono flex items-center'>
-                      { project.emailAddress }
+                      { project.postmarkInboundEmailAddress }
                       <button
                         onClick={ copyEmailAddress }
                         className='ml-2 text-blue-600 hover:text-blue-800'
@@ -636,26 +835,26 @@ const _ = () => {
                       { `Created At` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                      { project.createdAt.toLocaleDateString() }
+                      { new Date(project.createdAt).toLocaleDateString() }
                     </dd>
                   </div>
                 </dl>
 
-                {isEditing && (
+                { isEditing && (
                   <div className='mt-6 flex justify-end space-x-3'>
                     <button
                       type='button'
-                      onClick={() => setIsEditing(false)}
+                      onClick={ () => setIsEditing(false) }
                       className='inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                     >
-                      Cancel
+                      { `Cancel` }
                     </button>
                     <button
                       type='button'
-                      onClick={handleEditSubmit}
+                      onClick={ handleEditSubmit }
                       className='inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                     >
-                      Save Changes
+                      { `Save Changes` }
                     </button>
                   </div>
                 )}

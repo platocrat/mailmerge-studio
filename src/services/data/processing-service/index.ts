@@ -11,21 +11,18 @@ import {
   DYNAMODB_TABLE_NAMES,
 } from '@/utils'
 import type { 
-  PostmarkAttachment, 
-  ProcessedInboundJson,
+  ATTACHMENT__POSTMARK,
+  PROCESSED_INBOUND_EMAIL__DYNAMODB,
+  ProcessedInboundEmail, 
+  AttachmentMetadata,
+  STORED_OPENAI_URLS__R2,
+  DATA_ANALYSIS_RESULT__OPENAI,
 } from '@/types'
 import { r2Service } from '@/services/data/cloudflare-r2'
 // Add dedicated import for OpenAI service
 import { openaiService } from '@/services/open-ai'
 // Data processing types
-import type { PROCESSED_DATA__DYNAMODB } from '@/types'
 import { dynamoService } from '@/services/data'
-
-interface AttachmentMetadata {
-  name: string
-  type: string
-  url: string
-}
 
 /**
  * @dev Data processing service for handling email data
@@ -46,14 +43,19 @@ class DataProcessingService {
    * @param email - The processed inbound email represented as a JSON object
    * @returns The processed data
    */
-  async processEmailData(
-    email: ProcessedInboundJson
-  ): Promise<PROCESSED_DATA__DYNAMODB> {
+  async processEmail(
+    email: ProcessedInboundEmail
+  ): Promise<PROCESSED_INBOUND_EMAIL__DYNAMODB> {
     // Initialize processed data
-    const processedData: PROCESSED_DATA__DYNAMODB = {
+    const processedData: PROCESSED_INBOUND_EMAIL__DYNAMODB = {
       id: email.projectId,
       sourceEmailId: email.id,
-      processedAtTimestamp: Date.now(),
+      processedAt: Date.now(),
+      fromEmail: email.fromEmail,
+      fromName: email.fromName,
+      subject: email.subject,
+      textContent: email.textBody,
+      receivedAt: email.receivedAt,
       summaryFileUrl: '',
       visualizationUrls: [],
       attachmentUrls: [],
@@ -70,184 +72,60 @@ class DataProcessingService {
           ContentLength: att.size
         }))
 
-        const processedAttachments = await this.processAttachments(
+        const processedAttachments = await DataProcessingService.R2.processAttachments(
           email.projectId,
           email.id,
           attachments,
         )
-        
         processedData.attachments = processedAttachments
         processedData.attachmentUrls = processedAttachments.map(a => a.url)
       }
 
       // Use OpenAI to analyze the data
-      const attachments = processedData.attachments.map(att => ({
-        name: att.name,
-        type: att.type,
-        content: att.url // Pass the URL instead of content since we're storing files in R2
-      }))
-
-      const analysisResult = await openaiService.analyzeData(
-        email.textContent,
-        attachments,
+      const analysisResult = await DataProcessingService.OpenAI.analyzeEmail(
+        email.textBody,
+        processedData.attachments
       )
 
       // Store OpenAI outputs in R2
-      const key = `${email.projectId}/${email.id}/summary.txt`
-      const base64Data = analysisResult.textContent
-      const contentType = 'text/plain'
-
-      const summaryFileUrl = await r2Service.storeFile(
-        key,
-        base64Data,
-        contentType,
-      )
-
-      const visualizationUrls = await Promise.all(
-        analysisResult.imageFiles.map(async (image, index) => {
-          return await r2Service.storeFile(
-            `${email.projectId}/${email.id}/visualization_${index}.png`,
-            image,
-            'image/png'
-          )
-        })
+      const { 
+        summaryFileUrl, 
+        visualizationUrls
+      } = await DataProcessingService.R2.storeOpenAiOutputs(
+        email.projectId,
+        email.id,
+        analysisResult
       )
 
       // Update processed data with R2 URLs
       processedData.summaryFileUrl = summaryFileUrl
       processedData.visualizationUrls = visualizationUrls
 
-      // Prepare DynamoDB item (id is projectId)
-      const dynamoItem: PROCESSED_DATA__DYNAMODB = {
+      // Prepare new processed inbound email entry to be saved in DynamoDB 
+      // (id is projectId)
+      await DataProcessingService.DynamoDB.saveProcessedData({
         id: email.projectId,
         sourceEmailId: email.id,
-        processedAtTimestamp: processedData.processedAtTimestamp,
+        processedAt: processedData.processedAt,
+        fromEmail: email.fromEmail,
+        fromName: email.fromName,
+        subject: email.subject,
+        textContent: email.textBody,
+        receivedAt: email.receivedAt,
         summaryFileUrl,
         visualizationUrls,
         attachmentUrls: processedData.attachmentUrls,
         attachments: processedData.attachments,
-      }
-
-      // Persist via DynamoService helper
-      await dynamoService.saveProcessedData(dynamoItem)
+      })
 
       // Update project status
-      await this.updateProjectStatus(email.projectId)
+      await dynamoService.updateProjectStatus(email.projectId, 'Active', 1)
 
       return processedData
     } catch (error) {
       console.error('Error processing email data:', error)
       throw error
     }
-  }
-
-  /**
-   * @dev Process attachments and store in R2
-   * @param projectId - The project ID
-   * @param emailId - The email ID
-   * @param attachments - The attachments to process
-   * @returns The processed attachments with R2 URLs
-   */
-  private async processAttachments(
-    projectId: string,
-    emailId: string,
-    attachments: PostmarkAttachment[],
-  ): Promise<AttachmentMetadata[]> {
-    const processedAttachments: AttachmentMetadata[] = []
-
-    for (const attachment of attachments) {
-      try {
-        // Convert base64 to original file
-        const fileContent = this.base64ToFile(attachment.Content, attachment.ContentType)
-        
-        // Generate a key for the attachment
-        const key = `${projectId}/${emailId}/${attachment.Name}`
-
-        // Store the attachment in R2
-        const url = await r2Service.storeFile(
-          key,
-          fileContent.toString('base64'), // Convert Buffer to base64 string
-          attachment.ContentType,
-        )
-
-        processedAttachments.push({
-          name: attachment.Name,
-          type: attachment.ContentType,
-          url
-        })
-      } catch (error) {
-        console.error('Error storing attachment:', error)
-      }
-    }
-
-    return processedAttachments
-  }
-
-  /**
-   * @dev Convert base64 to file
-   * @param base64 - The base64 encoded content
-   * @param contentType - The content type of the file
-   * @returns The file content
-   */
-  private base64ToFile(base64: string, contentType: string): Buffer {
-    const base64Data = base64.replace(/^data:.*?;base64,/, '')
-    return Buffer.from(base64Data, 'base64')
-  }
-
-  /**
-   * @dev Update project status in DynamoDB
-   * @param projectId - The project ID
-   */
-  private async updateProjectStatus(projectId: string): Promise<void> {
-    const TableName = DYNAMODB_TABLE_NAMES.projects
-    const Key = { id: projectId }
-    const UpdateExpression = 'set status = :status, emailCount = emailCount + :inc, lastActivity = :lastActivity'
-    const ExpressionAttributeValues = {
-      ':status': 'active',
-      ':inc': 1,
-      ':lastActivity': Date.now()
-    }
-
-    const input: UpdateCommandInput = {
-      TableName,
-      Key,
-      UpdateExpression,
-      ExpressionAttributeValues,
-    }
-    const command = new UpdateCommand(input)
-
-    await ddbDocClient.send(command)
-  }
-
-  /**
-   * @dev Get recent processed data for a project
-   * @param projectId - The project ID
-   * @param limitCount - The number of records to return
-   * @returns The processed data
-   */
-  async getProjectData(
-    projectId: string,
-    limitCount = 10,
-  ): Promise<PROCESSED_DATA__DYNAMODB[]> {
-    const TableName = DYNAMODB_TABLE_NAMES.processedData
-    const KeyConditionExpression = 'id = :projectId'
-    const ExpressionAttributeValues = {
-      ':projectId': projectId
-    }
-    const ScanIndexForward = false // Sort in descending order
-    const Limit = limitCount
-
-    const input: QueryCommandInput = {
-      TableName,
-      KeyConditionExpression,
-      ExpressionAttributeValues,
-      ScanIndexForward,
-      Limit,
-    }
-    const command = new QueryCommand(input)
-    const response = await ddbDocClient.send(command)
-
-    return (response.Items || []) as PROCESSED_DATA__DYNAMODB[]
   }
 
   /**
@@ -259,6 +137,143 @@ class DataProcessingService {
       Math.random().toString(36).substring(2, 15) +
       Math.random().toString(36).substring(2, 15)
     )
+  }
+
+  // --- Static Subclasses ---
+  static R2 = class {
+    /**
+     * @dev Process attachments
+     * @param projectId - The project ID
+     * @param emailId - The email ID
+     * @param attachments - The attachments
+     * @returns The processed attachments
+     */
+    static async processAttachments(
+      projectId: string,
+      emailId: string,
+      attachments: ATTACHMENT__POSTMARK[],
+    ): Promise<AttachmentMetadata[]> {
+      const processedAttachments: AttachmentMetadata[] = []
+      for (const attachment of attachments) {
+        try {
+          // Convert base64 to original file
+          const fileContent = DataProcessingService.R2.base64ToFile(
+            attachment.Content, 
+            attachment.ContentType
+          )
+          // Generate a key for the attachment
+          const key = `${projectId}/${emailId}/${attachment.Name}`
+          // Store the attachment in R2
+          const url = await r2Service.storeFile(
+            key,
+            fileContent.toString('base64'),
+            attachment.ContentType,
+          )
+          processedAttachments.push({
+            name: attachment.Name,
+            type: attachment.ContentType,
+            size: attachment.ContentLength,
+            url
+          })
+        } catch (error) {
+          console.error('Error storing attachment:', error)
+        }
+      }
+      return processedAttachments
+    }
+
+    /**
+     * @dev Convert base64 to file
+     * @param base64 - The base64 string
+     * @param contentType - The content type
+     * @returns The file
+     */
+    static base64ToFile(base64: string, contentType: string): Buffer {
+      const base64Data = base64.replace(/^data:.*?;base64,/, '')
+      return Buffer.from(base64Data, 'base64')
+    }
+
+    /**
+     * @dev Store OpenAI outputs
+     * @param projectId - The project ID
+     * @param emailId - The email ID
+     * @param analysisResult - The analysis result
+     * @returns The summary file URL and visualization URLs
+     */
+    static async storeOpenAiOutputs(
+      projectId: string,
+      emailId: string,
+      analysisResult: { textContent: string; imageFiles: string[] }
+    ): Promise<STORED_OPENAI_URLS__R2> {
+      const key = `${projectId}/${emailId}/summary.txt`
+      const base64Data = analysisResult.textContent
+      const contentType = 'text/plain'
+      const summaryFileUrl = await r2Service.storeFile(
+        key,
+        base64Data,
+        contentType,
+      )
+
+      // Store visualizations in R2 for each image in the analysis result's 
+      // `imageFiles` array
+      const visualizationUrls = await Promise.all(
+        analysisResult.imageFiles.map(
+          async (
+            image: string, 
+            index: number
+          ): Promise<string> => {
+            return await r2Service.storeFile(
+              `${projectId}/${emailId}/visualization_${index}.png`,
+              image,
+              'image/png'
+            )
+          }
+        )
+      )
+
+      const storedOpenAiUrls = { summaryFileUrl, visualizationUrls }
+      return storedOpenAiUrls
+    }
+  }
+
+  static OpenAI = class {
+    /**
+     * @dev Analyze email data
+     * @param textBody - The text body of the email
+     * @param attachments - The attachments of the email
+     * @returns The analysis result
+     */
+    static async analyzeEmail(
+      textBody: string,
+      attachments: AttachmentMetadata[]
+    ): Promise<DATA_ANALYSIS_RESULT__OPENAI> {
+      const mappedAttachments = attachments.map((
+        attachment: AttachmentMetadata
+      ) => ({
+        name: attachment.name,
+        type: attachment.type,
+        content: attachment.url // Pass the URL instead of content since we're storing files in R2
+      }))
+
+      const analysisResult = await openaiService.analyzeData(
+        textBody, 
+        mappedAttachments
+      )
+
+      return analysisResult
+    }
+  }
+
+  static DynamoDB = class {
+    /**
+     * @dev Save processed data
+     * @param item - The processed data
+     */
+    static async saveProcessedData(
+      item: PROCESSED_INBOUND_EMAIL__DYNAMODB
+    ): Promise<void> {
+      await dynamoService.saveProcessedData(item)
+    }
   }
 }
 

@@ -3,16 +3,23 @@ import React, { FC, useState } from 'react'
 import { Share2, Download, Mail } from 'lucide-react'
 // Locals
 import { postmarkService } from '@/services'
-import type { PROCESSED_DATA__DYNAMODB } from '@/types'
+import type { PROJECT__DYNAMODB } from '@/types'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
+import { getConsoleMetadata } from '@/utils'
 
 interface DashboardPreviewProps {
-  data: PROCESSED_DATA__DYNAMODB
+  project: PROJECT__DYNAMODB
   showControls?: boolean
 }
 
+
+const FILE_PATH = 'src/components/Previews/Dashboard/index.tsx'
+const CONSOLE_LEVEL = 'CLIENT'
+
+
+// ------------------------------- Component -----------------------------------
 const DashboardPreview: FC<DashboardPreviewProps> = ({
-  data,
+  project,
   showControls = true,
 }) => {
   // ----------------------------- States --------------------------------------
@@ -37,7 +44,13 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     return formattedDate
   }
 
+  // Use the first email as the dashboard data source
+  const email = project.emails && project.emails.length > 0 
+    ? project.emails[0] 
+    : null
 
+
+  // ------------------------------ Handlers -----------------------------------
   const handleShare = () => {
     // In a real implementation, this would generate a shareable link
     alert('Dashboard shared! (Demo functionality)')
@@ -56,18 +69,18 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     additionalMessage: string
   ) => {
     const htmlBody = `
-      <h2>Dashboard: ${ data.id }</h2>
-      <p>Generated on ${ formatDate(new Date(data.processedAtTimestamp)) }</p>
+      <h2>Dashboard: ${ project.id }</h2>
+      <p>Generated on ${ formatDate(new Date(email?.processedAt ?? 0)) }</p>
       ${
         additionalMessage  
           ? `<p>${additionalMessage}</p>` 
           : ''
         }
       <h3>Summary</h3>
-      <div>${ data.summaryFileUrl }</div>
-      ${ data.visualizationUrls && data.visualizationUrls.length > 0 ? `
+      <div>${ email?.summaryFileUrl ?? '' }</div>
+      ${ email?.visualizationUrls && email.visualizationUrls.length > 0 ? `
           <h3>Data Visualizations</h3>
-          ${ data.visualizationUrls.map((imageUrl: string, i: number): string => `
+          ${ email.visualizationUrls.map((imageUrl: string, i: number): string => `
             <div>
               <img src="${ imageUrl }" alt="Data Visualization ${ i + 1 }" />
             </div>
@@ -85,16 +98,16 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
   }
 
 
-  // ------------------------------ Render -------------------------------------
+  // --------------------------- Rendering -------------------------------------
   return (
     <>
       <div className='bg-white rounded-lg shadow-md overflow-hidden'>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4'>
           <h2 className='text-xl font-bold text-white'>
-            { `Dashboard: ${data.id}` }
+            { `Dashboard: ${project.id}` }
           </h2>
           <p className='text-blue-100 text-sm mt-1'>
-            { `Generated on ${ formatDate(new Date(data.processedAtTimestamp)) }` }
+            { `Generated on ${ formatDate(new Date(email?.processedAt ?? 0)) }` }
           </p>
         </div>
 
@@ -106,7 +119,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
             </h3>
             <div className='prose max-w-none'>
               <iframe 
-                src={ data.summaryFileUrl }
+                src={ email?.summaryFileUrl }
                 className='w-full h-64 border-0'
                 title='Summary Content'
               />
@@ -114,14 +127,14 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
           </div>
 
           {/* Data Visualizations */}
-          { data.visualizationUrls && 
-            data.visualizationUrls.length > 0 && (
+          { email?.visualizationUrls && 
+            email.visualizationUrls.length > 0 && (
             <div className='mb-6'>
               <h3 className='text-lg font-medium text-gray-900 mb-3'>
                 { `Data Visualizations` }
               </h3>
               <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                { data.visualizationUrls.map((imageUrl: string, i: number) => (
+                { email.visualizationUrls.map((imageUrl: string, i: number) => (
                   <div 
                     key={ i } 
                     className='border border-gray-200 rounded-lg overflow-hidden'
@@ -138,14 +151,14 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
           )}
 
           {/* Attachments preview */}
-          { data.attachmentUrls && 
-            data.attachmentUrls.length > 0 && (
+          { email?.attachmentUrls && 
+            email.attachmentUrls.length > 0 && (
             <div className='mt-6'>
               <h3 className='text-lg font-medium text-gray-900 mb-3'>
                 { `Attachments` }
               </h3>
               <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                { data.attachmentUrls.map((url: string, i: number) => (
+                { email.attachmentUrls.map((url: string, i: number) => (
                   <div
                     key={ i }
                     className='border border-gray-200 rounded-md p-3 flex items-center'
@@ -190,7 +203,7 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
                 { `Download PDF` }
               </button>
               <button
-                onClick={() => setIsEmailModalOpen(true)}
+                onClick={ () => setIsEmailModalOpen(true) }
                 className='inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
               >
                 <Mail className='h-4 w-4 mr-1.5' />
@@ -203,9 +216,9 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
 
       <EmailDashboardModal
         isOpen={isEmailModalOpen}
-        onClose={() => setIsEmailModalOpen(false)}
+        onClose={ () => setIsEmailModalOpen(false) }
         onSend={handleSendEmail}
-        defaultSubject={ `Dashboard: ${data.id}` }
+        defaultSubject={ `Dashboard: ${project.id}` }
         defaultMessage=""
       />
     </>

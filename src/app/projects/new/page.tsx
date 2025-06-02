@@ -4,9 +4,7 @@
 import { useRouter } from 'next/navigation'
 import { Mail, ArrowLeft } from 'lucide-react'
 import React, { ChangeEvent, FormEvent, useState } from 'react'
-// Locals
-import { dynamoService } from '@/services/data'
-import { DYNAMODB_TABLE_NAMES } from '@/utils'
+import { PROJECT__DYNAMODB } from '@/types'
 
 
 // ------------------------------- Component -----------------------------------
@@ -38,28 +36,37 @@ const _ = () => {
    */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-
     setLoading(true)
+    await putProject()
+  }
+
+
+  /**
+   * @dev Put a project via a PUT request to DynamoDB
+   */
+  async function putProject() {
+    const API_URL = `/api/project`
 
     try {
-      // Generate a unique project ID
-      const projectId = Math.random().toString(36).substring(2, 15)
-      // Use the single inbound server address
-      const emailAddress = `${ process.env.NEXT_PUBLIC_POSTMARK_INBOUND_HASH }@inbound.postmarkapp.com`
+      // Send to server API route
+      const response = await fetch(API_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
 
-      const projectData = {
-        ...formData,
-        id: projectId,
-        emailAddress,
-        createdAt: Date.now(),
-        status: 'inactive',
-        emailCount: 0,
+      if (response.status !== 200) {
+        throw new Error('Failed to create project')
       }
 
-      // Save to DynamoDB
-      await dynamoService.putItem(DYNAMODB_TABLE_NAMES.projects, projectData)
+      const json = await response.json()
 
-      router.push(`/projects/${projectId}`)
+      const project: PROJECT__DYNAMODB = json.project as PROJECT__DYNAMODB
+      const projectId = project.id
+
+      router.push(`/projects/${ projectId }`)
     } catch (error) {
       console.error('Error creating project:', error)
       alert('Failed to create project. Please try again.')
