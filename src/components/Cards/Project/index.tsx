@@ -55,7 +55,7 @@ const ProjectCard: FC<ProjectCardProps> = ({ project }) => {
           <div className='flex items-center text-sm text-gray-600'>
             <Mail className='h-4 w-4 text-gray-400 mr-2' />
             <span className='font-mono'>
-              { `${ project.postmarkInboundEmailAddress }` }
+              { `${ project.postmarkInboundEmail }` }
             </span>
           </div>
         </div>

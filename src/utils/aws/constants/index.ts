@@ -23,6 +23,7 @@ export const CREDENTIALS = {
  * @dev Used for AWS DynamoDB API calls
  */
 export const DYNAMODB_TABLE_NAMES = {
+  accounts: 'accounts',
   projects: 'projects',
 }
 

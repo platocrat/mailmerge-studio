@@ -29,24 +29,27 @@ const CONSOLE_LEVEL = 'CLIENT'
 const demoProjects: Record<string, PROJECT__DYNAMODB> = {
   'demo-project-1': {
     id: 'demo-project-1',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Sales Dashboard',
-    postmarkInboundEmailAddress: 'demo+sales@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+sales@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 0, 15).getTime(),
     description: 'Weekly sales reports and customer analytics',
     status: 'Active',
   },
   'demo-project-2': {
     id: 'demo-project-2',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Customer Feedback',
-    postmarkInboundEmailAddress: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+feedback@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 1, 3).getTime(),
     description: 'Customer satisfaction surveys and feedback analysis',
     status: 'Active',
   },
   'demo-project-3': {
     id: 'demo-project-3',
+    accountEmail: 'demo@mmstudio.com',
     name: 'Field Research',
-    postmarkInboundEmailAddress: 'demo+research@mmstudio.inbound.postmarkapp.com',
+    postmarkInboundEmail: 'demo+research@mmstudio.inbound.postmarkapp.com',
     createdAt: new Date(2025, 2, 10).getTime(),
     description: 'Field research data and market insights',
     status: 'Active',
@@ -370,7 +373,7 @@ const _ = () => {
 
   // -------------------------- Regular functions ------------------------------
   const copyEmailAddress = () => {
-    navigator.clipboard.writeText(project?.postmarkInboundEmailAddress ?? '')
+    navigator.clipboard.writeText(project?.postmarkInboundEmail ?? '')
     alert('Email address copied to clipboard!')
   }
 
@@ -655,7 +658,7 @@ const _ = () => {
             <div className='inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-50'>
               <Mail className='h-4 w-4 text-gray-500 mr-2' />
               <span className='font-mono'>
-                { project.postmarkInboundEmailAddress }
+                { project.postmarkInboundEmail }
               </span>
               <button
                 onClick={ copyEmailAddress }
@@ -854,7 +857,7 @@ const _ = () => {
                       { `Email Address` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2 font-mono flex items-center'>
-                      { project.postmarkInboundEmailAddress }
+                      { project.postmarkInboundEmail }
                       <button
                         onClick={ copyEmailAddress }
                         className='ml-2 text-blue-600 hover:text-blue-800'

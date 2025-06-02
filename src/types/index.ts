@@ -109,14 +109,28 @@ export interface ExtractedInboundEmailData {
 }
 
 export interface PROJECT__DYNAMODB {
-  id: string // DynamoDB Partition Key
-  // accountId: string // DynamoDB Sort Key
+  accountEmail: string // DynamoDB Partition Key
+  id: string // DynamoDB Sort Key
   name: string // Human-readable project name
-  postmarkInboundEmailAddress: string  // Unique inbound email address for the project
+  postmarkInboundEmail: string  // Unique inbound email address for the project
   createdAt: number // Unix epoch (ms) when created – serves as Sort Key if needed
   status: 'Active' | 'Inactive' // Current state of the project
+  emails?: ProcessedInboundEmail[] | [] // Processed Postmark inbound emails
   emailCount?: number // Total inbound emails processed
-  emails?: ProcessedInboundEmail[] // Processed Postmark inbound emails
   description?: string // Optional description
   lastActivity?: number // Timestamp of last processed email
+}
+
+
+export type ACCOUNT__DYNAMODB = {
+  email: string // Partition/Primary Key
+  createdAt: number
+  password: {
+    hash: string
+    salt: string
+  }
+  projects: PROJECT__DYNAMODB[] | []
+  lastLogin: number
+  lastLogout: number
+  updatedAt: number // Default value is the same as `createdAt`
 }

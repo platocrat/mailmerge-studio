@@ -97,7 +97,12 @@ export async function GET(req: NextRequest) {
  */
 export async function PUT(req: Request) {
   try {
-    const { name, description } = await req.json()
+    const { 
+      name, 
+      description,
+      accountEmail,
+      postmarkInboundEmail,
+    } = await req.json()
 
     if (!name) {
       const consoleMetadata = getConsoleMetadata(
@@ -123,16 +128,12 @@ export async function PUT(req: Request) {
     // Generate unique project id
     const projectId = Math.random().toString(36).substring(2, 15)
 
-    // Use inbound hash from environment (must be set in .env or SSM)
-    const inboundHash = process.env.POSTMARK_INBOUND_HASH || ''
-
-    const postmarkInboundEmailAddress = `${inboundHash}@inbound.postmarkapp.com`
-
     const project: PROJECT__DYNAMODB = {
       id: projectId,
+      accountEmail,
       name,
       description,
-      postmarkInboundEmailAddress,
+      postmarkInboundEmail,
       createdAt: Date.now(),
       status: 'Inactive',
       emailCount: 0,
