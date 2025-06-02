@@ -21,8 +21,9 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [8. Email Commands](#8-email-commands)
 - [9. Accessibility](#9-accessibility)
 - [10. Technologies](#10-technologies)
-- [11. License](#11-license)
-- [12. Running example scripts](#11-running-example-scripts)
+- [11. Running example scripts](#11-running-example-scripts)
+- [12. ] 
+- [13. License](#11-license)
 
 ## 2. Originated from ChatGPT prompt
 
@@ -234,7 +235,51 @@ To run the example scripts on the command line, run the following command:
 npx ts-node -O '{"module":"commonjs"}' scripts/filename.ts
 ```
 
-## 12. License
+## 12. Creating `iv` and `key` for `ClientCrypto` functions
+
+The `encryptCompressEncode()` and `decodeDecompressDecrypt()` functions of the `ClientCrypto` (i.e. Client-Side Crypto) class are used to encrypt a shareable ID string which is used in shareable links. To encrypt strings on the client, create an initialization vector, i.e. `iv`, and an asymmetric encryption `key`.
+
+You will need an `iv` and `key` to encrypt the `str` argument:
+
+1. Note that we we are generating a 128-bit key length because it results in a shorter shareable ID string that we place in a shareable URL. (You can generate a key with a 256-bit key length by using a 32-byte initialization vector, i.e. `iv`.):
+
+   ```ts
+   // 1. Set the size of the key to 16 bytes
+   const bytesSize = new Uint8Array(16)
+   
+   // 2. Create an initialization vector of 128 bit-length
+   const iv = crypto.getRandomValues(bytesSize).toString()
+   console.log(`iv:`, iv)
+
+   // 3. Generate a new asymmetric key
+   const key = await crypto.subtle.generateKey(
+   {
+         name: 'AES-GCM',
+         length: 128
+   },
+   true,
+   ['encrypt', 'decrypt']
+   )
+
+   // 4. Export the `CryptoKey`
+   const jwk = await crypto.subtle.exportKey('jwk', key)
+   const serializedJwk = JSON.stringify(jwk)
+   console.log(`serializedJwk:`, serializedJwk)
+   ```
+
+2. Copy the logged `iv` and `serializedJwk` values.
+3. Set these values in your `.env.local` like so:
+
+   ```zsh
+   // The values below are merely an example
+   NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_KEY="{"alg":"A128GCM","ext":true,"k":"8_kB0wHsI43JNuUhoXPu5g","key_ops":["encrypt","decrypt"],"kty":"oct"}"
+   NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_IV="129,226,226,155,222,189,77,19,14,94,116,195,86,198,192,117"
+   ```
+
+4. For cloud-development, make sure to add the `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_KEY` and `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_IV` variables as GitHub Secrets to the GitHub repository or as new parameters in the AWS Parameter Store.
+
+
+## 13. License
 
 MIT
 

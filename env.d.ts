@@ -22,5 +22,8 @@ namespace NodeJS {
     AWS_ACCESS_KEY_ID: string
     AWS_SECRET_ACCESS_KEY: string
     AWS_SESSION_TOKEN: string
+    // ----------------------------- Crypto ------------------------------------
+    NEXT_PUBLIC_SHARE_DASHBOARD_ENCRYPTION_KEY: string
+    NEXT_PUBLIC_SHARE_DASHBOARD_ENCRYPTION_IV: string
   }
 }
