@@ -22,8 +22,8 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [9. Accessibility](#9-accessibility)
 - [10. Technologies](#10-technologies)
 - [11. Running example scripts](#11-running-example-scripts)
-- [12. ] 
-- [13. License](#11-license)
+- [12. Creating `iv` and `key` for `ClientCrypto` functions](#12-creating-iv-and-key-for-clientcrypto-functions) 
+- [13. License](#13-license)
 
 ## 2. Originated from ChatGPT prompt
 
