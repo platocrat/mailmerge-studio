@@ -3,118 +3,25 @@
 // Externals
 import {
   FC,
-  useState,
-  Fragment,
   useContext,
-  CSSProperties,
   useLayoutEffect,
+  useState,
 } from 'react'
-import Image from 'next/image'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Mail, BarChart2, Users } from 'lucide-react'
+import { Mail } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
 // Locals
-import SignInSignUpCard from '@/components/Cards/SignInSignUp'
 import Form from './form'
-import { SessionContext } from '@/contexts/SessionContext'
+import Title from './title'
+import Description from './descripton'
+import SignInSignUpCard from '@/components/Cards/SignInSignUp'
 import { SessionContextType } from '@/contexts/types'
+import { SessionContext } from '@/contexts/SessionContext'
 import { deleteAllCookies } from '@/utils'
-
 
 
 type SignInOrSignUpProps = {
   
 }
-
-
-type TitleProps = {
-  pathname: string
-  isSignUp: boolean
-  isFirstStep: boolean
-}
-
-
-type DescriptionProps = Omit<TitleProps, 'pathname'>
-
-
-
-
-const Title: FC<TitleProps> = ({
-  pathname,
-  isSignUp,
-  isFirstStep,
-}) => {
-  const searchParams = useSearchParams()
-  const authType = searchParams.get('type')
-
-  const subtitle = isFirstStep
-    ? `${
-        authType === 'login'
-          ? `Sign in to your dashboard`
-          : authType === 'signup'
-            ? `Sign up for free`
-            : ''
-      }`
-    : isSignUp
-      ? `Sign up for free`
-      : `Sign in to your dashboard`
-
-  return (
-    <>
-      <div className='text-center'>
-        <h1 className='text-2xl font-bold text-gray-900'>
-          { `MailMerge Studio` }
-        </h1>
-        <h3 className='text-base text-gray-600 mt-1'>{subtitle}</h3>
-      </div>
-    </>
-  )
-}
-
-
-
-const Description: FC<DescriptionProps> = ({
-  isSignUp,
-  isFirstStep,
-}) => {
-  const features = [
-    {
-      icon: <Mail className='h-5 w-5 text-blue-600' />, 
-      text: 'Transform your emails into dashboards',
-    },
-    {
-      icon: <BarChart2 className='h-5 w-5 text-indigo-600' />, 
-      text: 'Automated data analysis & visualization',
-    },
-    {
-      icon: <Users className='h-5 w-5 text-purple-600' />, 
-      text: 'Share insights with your team',
-    },
-  ]
-
-  return (
-    <>
-      <div>
-        { isFirstStep ? (
-          <div className='px-4'>
-            {features.map(({ icon, text }, i) => (
-              <div key={i} className='flex items-center gap-2'>
-                {icon}
-                <span className='text-sm text-gray-700'>{text}</span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p>
-            { isSignUp ? 'Welcome to MailMerge Studio!' : 'Welcome back!' }
-          </p>
-        ) }
-      </div>
-    </>
-  )
-}
-
-
-
 
 
 const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
@@ -432,11 +339,7 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
           title={
             <div className="flex flex-col items-center mb-2">
               <Mail className="h-16 w-16 text-blue-600 mb-1" />
-              <Title 
-                pathname={ pathname }
-                isSignUp={ isSignUp }
-                isFirstStep={ isFirstStep }
-              />
+              <Title isSignUp={ isSignUp } isFirstStep={ isFirstStep } />
             </div>
           }
           description={
