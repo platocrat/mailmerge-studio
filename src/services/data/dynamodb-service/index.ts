@@ -32,7 +32,7 @@ import type {
 
 
 const FILE_PATH = 'src/services/data/dynamodb-service/index.ts'
-const CONSOLE_LEVEL = 'SERVER'
+const LOG_TYPE = 'SERVER'
 
 
 /* ──────────────── Generic helpers ──────────────── */
@@ -57,7 +57,7 @@ class DynamoService {
       await ddbDocClient.send(command)
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL, 
+        LOG_TYPE, 
         false, 
         FILE_PATH,
         'DynamoService.putItem()'
@@ -86,7 +86,7 @@ class DynamoService {
       return Item as T | undefined
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'DynamoService.getItem()'
@@ -109,18 +109,18 @@ class DynamoService {
    */
   async queryItems <T extends DynamoItem>(
     table: string,
+    indexName: string,
     keyCondExpr: string,
     exprAttrVals: Record<string, any>,
-    indexName?: string,
     limit?: number,
     scanForward = true
   ): Promise<T[]> {
     const input: QueryCommandInput = {
       TableName: table,
+      IndexName: indexName,
       KeyConditionExpression: keyCondExpr,
       ExpressionAttributeValues: exprAttrVals,
       ScanIndexForward: scanForward,
-      ...(indexName && { IndexName: indexName }),
       ...(limit && { Limit: limit }),
     }
     const command = new QueryCommand(input)
@@ -130,7 +130,7 @@ class DynamoService {
       return (Items || []) as T[]
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'DynamoService.queryItems()'
@@ -168,7 +168,7 @@ class DynamoService {
       return (Items || []) as T[]
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'DynamoService.scanItems()'
@@ -205,7 +205,7 @@ class DynamoService {
       await ddbDocClient.send(command)
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'DynamoService.updateItem()'
@@ -233,7 +233,7 @@ class DynamoService {
       await ddbDocClient.send(command)
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'DynamoService.deleteItem()'

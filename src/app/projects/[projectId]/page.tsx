@@ -10,19 +10,21 @@ import {
   Mail,
   Settings
 } from 'lucide-react'
-import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import React, { FC, useEffect, useState } from 'react'
+import React, { FC, useContext, useEffect, useLayoutEffect, useState } from 'react'
 // Locals
+import type { PROJECT__DYNAMODB } from '@/types'
+import { getConsoleMetadata, RANDOM_POSTMARK_INBOUND_HASH } from '@/utils'
 import EmailPreview from '@/components/Previews/Email'
 import DashboardPreview from '@/components/Previews/Dashboard'
-import type { PROJECT__DYNAMODB } from '@/types'
-import { getConsoleMetadata } from '@/utils'
+import ProgressBarLink from '@/components/Progress/ProgressBarLink'
+import { SessionContextType } from '@/contexts/types'
+import { SessionContext } from '@/contexts/SessionContext'
 
 
 // ------------------------------ Constants ------------------------------------
 const FILE_PATH = 'src/app/projects/[projectId]/page.tsx'
-const CONSOLE_LEVEL = 'CLIENT'
+const LOG_TYPE = 'CLIENT'
 
 // -------------------------------- Types --------------------------------------
 // ------------------------------ Demo data ------------------------------------
@@ -350,6 +352,8 @@ const demoDashboards = {
 const _ = () => {
   // ---------------------------- URL params -----------------------------------
   const { projectId } = useParams<{ projectId: string }>()
+  // ----------------------------- Contexts ------------------------------------
+  const { email } = useContext<SessionContextType>(SessionContext)
   // ------------------------------ Hooks --------------------------------------
   const router = useRouter()
   // ------------------------------ State --------------------------------------
@@ -391,12 +395,13 @@ const _ = () => {
         body: JSON.stringify({
           id: projectId,
           name: editedProject.name,
+          accountEmail: email,
           description: editedProject.description,
         }),
       })
 
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         true,
         FILE_PATH,
         'handleEditSubmit()'
@@ -418,7 +423,7 @@ const _ = () => {
       }
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'handleEditSubmit()'
@@ -486,19 +491,10 @@ const _ = () => {
       const API_URL = `/api/project?projectId=${ projectId }`
       const response = await fetch(API_URL, {
         method: 'GET',
-        cache: 'force-cache',
         headers: {
           'Content-Type': 'application/json',
         },
       })
-
-      // const consoleMetadata = getConsoleMetadata(
-      //   CONSOLE_LEVEL,
-      //   true,
-      //   FILE_PATH,
-      //   'getProject()'
-      // )
-      // console.log(`${ consoleMetadata } response: `, response)
 
       if (response.status === 200) {
         const json = await response.json()
@@ -517,7 +513,7 @@ const _ = () => {
       }
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'getProject()'
@@ -543,7 +539,6 @@ const _ = () => {
       const API_URL = `/api/dashboards?projectId=${ projectId }`
       const response = await fetch(API_URL, {
         method: 'GET',
-        cache: 'force-cache',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -557,7 +552,7 @@ const _ = () => {
       }
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'getDashboards()'
@@ -581,8 +576,16 @@ const _ = () => {
 
   // ----------------------------- useEffects ----------------------------------
   // Fetch project on mount
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (projectId) {
+      const consoleMetadata = getConsoleMetadata(
+        LOG_TYPE,
+        true,
+        FILE_PATH,
+        'useLayoutEffect()'
+      )
+      console.log(`${ consoleMetadata } projectId: `, projectId)
+
       const requests = [
         getProject(),
         getDashboards(),
@@ -637,10 +640,10 @@ const _ = () => {
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
       {/* Breadcrumb */ }
       <div className='mb-6'>
-        <Link href='/' className='text-blue-600 hover:text-blue-800 flex items-center'>
+        <ProgressBarLink href='/' className='text-blue-600 hover:text-blue-800 flex items-center'>
           <ChevronLeft className='h-4 w-4 mr-1' />
           { `Back to Projects` }
-        </Link>
+        </ProgressBarLink>
       </div>
 
       {/* Project header */ }
@@ -872,7 +875,7 @@ const _ = () => {
                       { `Created At` }
                     </dt>
                     <dd className='mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2'>
-                      { new Date(project.createdAt).toLocaleDateString() }
+                      { new Date(project.createdAt).toLocaleString() }
                     </dd>
                   </div>
                 </dl>

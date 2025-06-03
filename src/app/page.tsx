@@ -1,16 +1,18 @@
 'use client'
 
 // Externals
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { Mail, Plus, BarChart2, Users } from 'lucide-react'
 // Locals
 import ProjectCard from '../components/Cards/Project'
 import type { PROJECT__DYNAMODB } from '@/types'
 import { getConsoleMetadata } from '@/utils/misc'
+import ProgressBarLink from '@/components/Progress/ProgressBarLink'
+import { SessionContext } from '@/contexts/SessionContext'
+import { SessionContextType } from '@/contexts/types'
 
 
-const CONSOLE_LEVEL = 'CLIENT'
+const LOG_TYPE = 'CLIENT'
 const FILE_PATH = 'src/app/page.tsx'
 
 
@@ -50,14 +52,7 @@ const demoProjects: PROJECT__DYNAMODB[] = [
 export default function _() {
   const [projects, setProjects] = useState<PROJECT__DYNAMODB[]>([])
   const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState<{ user?: any } | null>(null)
-
-  // Simulate session check (replace with real check in production)
-  useEffect(() => {
-    // Example: check for a session cookie or call an auth endpoint
-    const isSignedIn = document.cookie.includes('session=')
-    setSession(isSignedIn ? { user: { email: 'user@example.com' } } : null)
-  }, [])
+  const { isAuthenticated } = useContext<SessionContextType>(SessionContext)
 
   // --------------------------- Async functions -------------------------------
   async function getProjects() {
@@ -81,7 +76,7 @@ export default function _() {
       }
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'getProjects()'
@@ -120,19 +115,19 @@ export default function _() {
               { `Transform your emails into beautiful, interactive dashboards — no coding required.` }
             </p>
             <div className='mt-8 flex flex-wrap gap-4'>
-              <Link
+              <ProgressBarLink
                 href='/projects/new'
                 className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-blue-600 bg-white hover:bg-blue-50'
               >
                 <Plus className='mr-2 h-5 w-5' />
                 { `New Project` }
-              </Link>
-              <Link
+              </ProgressBarLink>
+              <ProgressBarLink
                 href='/demo'
                 className='inline-flex items-center px-4 py-2 border border-white rounded-md shadow-sm text-base font-medium text-white hover:bg-blue-700'
               >
                 { `Try Demo` }
-              </Link>
+              </ProgressBarLink>
             </div>
           </div>
           <div className='md:w-1/2 mt-8 md:mt-0 flex justify-center'>
@@ -163,7 +158,7 @@ export default function _() {
           { `How It Works` }
         </h2>
         <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-          {(() => {
+          { (() => {
             const bgColors = ['bg-blue-500', 'bg-indigo-500', 'bg-purple-500'];
             return [
               {
@@ -206,17 +201,17 @@ export default function _() {
           <h2 className='text-2xl font-bold text-gray-900'>
             { `Your Projects` }
           </h2>
-          <Link
+          <ProgressBarLink
             href='/projects/new'
             className='inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700'
           >
             <Plus className='mr-1.5 h-4 w-4' />
             { `New Project` }
-          </Link>
+          </ProgressBarLink>
         </div>
 
-        {/* Conditional rendering based on session */}
-        { !session?.user ? (
+        {/* Conditional rendering based on authentication */}
+        { !isAuthenticated ? (
           <div className='bg-white p-8 rounded-lg shadow-md text-center'>
             <Mail className='h-12 w-12 text-gray-400 mx-auto mb-4' />
             <h3 className='text-lg font-medium text-gray-900 mb-2'>
@@ -225,12 +220,12 @@ export default function _() {
             <p className='text-gray-600 mb-6'>
               { `Please sign in to view your projects.` }
             </p>
-            <Link
-              href='/sign-in'
+            <ProgressBarLink
+              href='/auth'
               className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700'
             >
               { `Sign In` }
-            </Link>
+            </ProgressBarLink>
           </div>
         ) : loading ? (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -261,13 +256,13 @@ export default function _() {
               <p className='text-gray-600 mb-6'>
                 { `Create your first project to start transforming emails into dashboards` }
               </p>
-              <Link
+              <ProgressBarLink
                 href='/projects/new'
                 className='inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700'
               >
                 <Plus className='mr-2 h-5 w-5' />
                 { `Create First Project` }
-              </Link>
+              </ProgressBarLink>
             </div>
           )
         }

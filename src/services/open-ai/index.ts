@@ -6,7 +6,7 @@ import { DATA_ANALYSIS_RESULT__OPENAI } from '@/types'
 
 
 // ----------------------- Console metadata constants --------------------------
-const CONSOLE_LEVEL = 'SERVER'
+const LOG_TYPE = 'SERVER'
 const FILE_NAME = 'src/services/open-ai/index.ts'
 
 // Initialize OpenAI client
@@ -73,7 +73,7 @@ class OpenAIService {
       )
 
       const consoleMetadata: string = getConsoleMetadata(
-        CONSOLE_LEVEL, 
+        LOG_TYPE, 
         true,
         FILE_NAME, 
         'analyzeData()'

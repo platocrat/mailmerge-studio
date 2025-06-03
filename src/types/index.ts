@@ -122,15 +122,31 @@ export interface PROJECT__DYNAMODB {
 }
 
 
+export type HashedPassword = {
+  hash: string
+  salt: string
+}
+
+
 export type ACCOUNT__DYNAMODB = {
   email: string // Partition/Primary Key
   createdAt: number
-  password: {
-    hash: string
-    salt: string
-  }
+  password: HashedPassword
   projects: PROJECT__DYNAMODB[] | []
-  lastLogin: number
-  lastLogout: number
+  lastSignIn: number
+  lastSignOut: number
   updatedAt: number // Default value is the same as `createdAt`
+}
+
+
+export type EncryptedCookieField = {
+  iv: string
+  encryptedData: string
+}
+
+
+export type CookieType = {
+  email: EncryptedCookieField
+  password: EncryptedCookieField
+  signedInAt: EncryptedCookieField
 }

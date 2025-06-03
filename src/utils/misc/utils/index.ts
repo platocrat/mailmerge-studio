@@ -5,6 +5,15 @@ import {
 
 
 
+export const imgPaths = () => {
+  const basePath = `/icons`
+  return {
+    svg: `${basePath}/svg/`,
+    png: `${basePath}/png/`,
+  }
+}
+
+
 
 export function deleteAllCookies() {
   const cookies = document.cookie.split(';')
@@ -38,25 +47,32 @@ export function nowInNs(): bigint {
  * @param {string} functionName - The name of the function that logged the message.
  */
 export function getConsoleMetadata(
-  logType: 'CLIENT' | 'SERVER' | 'API CALL',
+  logType: 'CLIENT' | 'SERVER' | 'API_CALL',
   isLog: boolean,
   filePath: string,
   functionName: string,
 ): string {
-  const rn = rng(LOG_INDEX_RANGE)
   const currentTime = nowInNs()
 
   return `[${
     logType
   } ${
     isLog ? 'LOG' : 'ERROR'
-  }: ${ 
-    rn
-  } --logTimestamp="${
+  }: --logTimestamp="${
     currentTime
   }" --file-path="${ 
     filePath 
   } --function-name="${ 
     functionName 
   }"]: `
+}
+
+
+export function debounce(fn: any, delay: number): ((...args: any) => void) {
+  let timer: any = null
+
+  return (...args: any) => {
+    clearTimeout(timer)
+    timer = setTimeout(() => fn(...args), delay)
+  }
 }

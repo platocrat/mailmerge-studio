@@ -1,9 +1,9 @@
 // Externals
 import React, { FC } from 'react'
-import Link from 'next/link'
 import { Mail, BarChart2, ExternalLink, Calendar } from 'lucide-react'
 // Locals
 import type { PROJECT__DYNAMODB } from '@/types'
+import ProgressBarLink from '@/components/Progress/ProgressBarLink'
 
 
 interface ProjectCardProps {
@@ -61,13 +61,13 @@ const ProjectCard: FC<ProjectCardProps> = ({ project }) => {
         </div>
 
         <div className='mt-4 flex justify-end'>
-          <Link
+          <ProgressBarLink
             href={ `/projects/${ project.id }` }
             className='inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
           >
             { `View Details` }
             <ExternalLink className='ml-1.5 h-4 w-4' />
-          </Link>
+          </ProgressBarLink>
         </div>
       </div>
     </div>

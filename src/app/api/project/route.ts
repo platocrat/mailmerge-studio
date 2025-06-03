@@ -1,14 +1,15 @@
 // src/app/api/project/route.ts
 // Externals
+import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
+import { PROJECT__DYNAMODB } from '@/types'
 import { dynamoService } from '@/services/data'
 import { DYNAMODB_TABLE_NAMES, getConsoleMetadata } from '@/utils'
-import { PROJECT__DYNAMODB } from '@/types'
 
 
 const FILE_PATH = `src/app/api/project/route.ts`
-const CONSOLE_LEVEL = 'SERVER'
+const LOG_TYPE = 'SERVER'
 
 
 /**
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
 
     if (!id) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'GET()'
@@ -41,10 +42,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(jsonBody, responseInit)
     }
 
-    const project: PROJECT__DYNAMODB | undefined = await dynamoService.getItem(
+    // Query the project by ID
+    const projects: PROJECT__DYNAMODB[] = await dynamoService.queryItems<PROJECT__DYNAMODB>(
       DYNAMODB_TABLE_NAMES.projects,
-      { id }
+      'id-index',
+      `id = :id`,
+      { ':id': id },
     )
+    // We only expect one project because we queried by project ID
+    const project = projects[0]
 
     if (!project) {
       const jsonBody = { error: 'Project not found' }
@@ -69,7 +75,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(jsonBody, responseInit)
   } catch (error) {
     const consoleMetadata = getConsoleMetadata(
-      CONSOLE_LEVEL,
+      LOG_TYPE,
       false, // true = is a console.log(), false = is a console.error()
       FILE_PATH,
       'GET()'
@@ -106,7 +112,7 @@ export async function PUT(req: Request) {
 
     if (!name) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL, 
+        LOG_TYPE, 
         false, 
         FILE_PATH,
         'PUT()'
@@ -126,7 +132,7 @@ export async function PUT(req: Request) {
     }
 
     // Generate unique project id
-    const projectId = Math.random().toString(36).substring(2, 15)
+    const projectId = randomBytes(8).toString('hex')
 
     const project: PROJECT__DYNAMODB = {
       id: projectId,
@@ -153,7 +159,7 @@ export async function PUT(req: Request) {
     return NextResponse.json(jsonBody, responseInit)
   } catch (error) {
     const consoleMetadata = getConsoleMetadata(
-      CONSOLE_LEVEL, 
+      LOG_TYPE, 
       false, 
       FILE_PATH, 
       'POST()'
@@ -185,7 +191,7 @@ export async function PATCH(req: Request) {
 
     if (!id || !name) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'PATCH()'
@@ -238,7 +244,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json(jsonBody, responseInit)
   } catch (error) {
     const consoleMetadata = getConsoleMetadata(
-      CONSOLE_LEVEL,
+      LOG_TYPE,
       false,
       FILE_PATH,
       'PATCH()'

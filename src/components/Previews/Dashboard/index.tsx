@@ -14,7 +14,7 @@ interface DashboardPreviewProps {
 
 
 const FILE_PATH = 'src/components/Previews/Dashboard/index.tsx'
-const CONSOLE_LEVEL = 'CLIENT'
+const LOG_TYPE = 'CLIENT'
 
 
 // ------------------------------- Component -----------------------------------

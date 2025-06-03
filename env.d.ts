@@ -25,5 +25,7 @@ namespace NodeJS {
     // ----------------------------- Crypto ------------------------------------
     NEXT_PUBLIC_SHARE_DASHBOARD_ENCRYPTION_KEY: string
     NEXT_PUBLIC_SHARE_DASHBOARD_ENCRYPTION_IV: string
+    // ----------------------------- HCaptcha ----------------------------------
+    NEXT_PUBLIC_HCAPTCHA_SITE_KEY: string
   }
 }

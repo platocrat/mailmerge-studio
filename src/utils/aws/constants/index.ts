@@ -23,23 +23,29 @@ export const CREDENTIALS = {
  * @dev Used for AWS DynamoDB API calls
  */
 export const DYNAMODB_TABLE_NAMES = {
-  accounts: 'accounts',
-  projects: 'projects',
+  accounts: 'mmstudio-accounts',
+  projects: 'mmstudio-projects',
 }
 
 /**
  * @dev Used for AWS SSM API calls
  */
 export const AWS_PARAMETER_NAMES = {
-  // ----------------------------- OpenAI ------------------------------------
+  // ------------------------------- JWT ---------------------------------------
+  JWT_SECRET: 'JWT_SECRET',
+  // ----------------------- User Authentication -------------------------------
+  COOKIE_ENCRYPTION_SECRET_KEY: 'COOKIE_ENCRYPTION_SECRET_KEY',
+  // ----------------------------- OpenAI --------------------------------------
   OPENAI_API_KEY: 'OPENAI_API_KEY',
-  // --------------------------- Cloudflare R2 -------------------------------
+  // --------------------------- Cloudflare R2 ---------------------------------
   R2_ACCOUNT_ID: 'R2_ACCOUNT_ID',
   R2_ACCESS_KEY_ID: 'R2_ACCESS_KEY_ID',
   R2_SECRET_ACCESS_KEY: 'R2_SECRET_ACCESS_KEY',
   R2_BUCKET: 'R2_BUCKET',
-  // ----------------------------- Postmark ----------------------------------
+  // ----------------------------- Postmark ------------------------------------
   POSTMARK_SERVER_TOKEN: 'POSTMARK_SERVER_TOKEN',
   POSTMARK_FROM_EMAIL: 'POSTMARK_FROM_EMAIL',
   POSTMARK_INBOUND_HASH: 'POSTMARK_INBOUND_HASH',
+  // ----------------------------- hCaptcha ------------------------------------
+  H_CAPTCHA_SECRET_KEY: 'H_CAPTCHA_SECRET_KEY'
 }

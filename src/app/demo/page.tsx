@@ -2,14 +2,15 @@
 'use client'
 
 // Externals
-import { FileText as FileIcon, Mail, Plus, Send, Trash2 } from 'lucide-react'
 import { ChangeEvent, FormEvent, useState } from 'react'
+import { FileText as FileIcon, Mail, Plus, Send, Trash2 } from 'lucide-react'
 // Locals
 import type {
   ATTACHMENT__POSTMARK,
   INBOUND_EMAIL__POSTMARK,
   ProcessedInboundEmail
 } from '@/types'
+import { MAX_TOTAL_SIZE_MB, MAX_TOTAL_SIZE_BYTES } from '@/utils'
 
 // --------------------------------- Types -------------------------------------
 type Attachments = { 
@@ -18,12 +19,6 @@ type Attachments = {
   size: number
   file?: File 
 }[]
-
-// ------------------------------ Constants ------------------------------------
-// Random inbound hash for displaying in the UI
-const RANDOM_INBOUND_HASH = '2a085f662f0b4fca9e7d7a344e36583e'
-const MAX_TOTAL_SIZE_MB = 35
-const MAX_TOTAL_SIZE_BYTES = MAX_TOTAL_SIZE_MB * 1024 * 1024
 
 // ------------------------------- Component -----------------------------------
 const _ = () => {

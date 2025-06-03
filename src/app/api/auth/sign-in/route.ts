@@ -10,9 +10,11 @@ import {
   getConsoleMetadata, 
   ServerCrypto 
 } from '@/utils'
+import { ACCOUNT__DYNAMODB } from '@/types'
+import { verifiedEmailAndPassword } from '@/utils/api/auth'
 
 
-const CONSOLE_LEVEL = 'SERVER'
+const LOG_TYPE = 'SERVER'
 const FILE_PATH = 'src/app/api/auth/sign-in/route.ts'
 
 
@@ -21,7 +23,7 @@ export async function POST(req: NextRequest) {
   
   if (!email || !password) {
     const consoleMetadata = getConsoleMetadata(
-      CONSOLE_LEVEL,
+      LOG_TYPE,
       false,
       FILE_PATH,
       'POST()'
@@ -49,11 +51,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const response = await ddbDocClient.send(command)
-    const user = response.Items?.[0]
+    const account: ACCOUNT__DYNAMODB = response.Items?.[0] as ACCOUNT__DYNAMODB
 
-    if (!user || !user.password) {
+    if (!account || !account.password) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'POST()'
@@ -71,46 +73,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(jsonBody, responseInit)
     }
 
-    const verified = new ServerCrypto().verifyPassword(
+    const storedEmail = account.email
+    const storedPassword = account.password
+
+    const verifiedEmail = storedEmail === email
+    const verifiedPassword = new ServerCrypto().verifyPassword(
       password, 
-      user.password.hash, 
-      user.password.salt
+      account.password.hash,
+      account.password.salt
     )
 
-    if (!verified) {
-      const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
-        false,
-        FILE_PATH,
-        'POST()'
-      )
-      const errorMessage = `Invalid credentials`
-      console.error(`${ consoleMetadata } ${ errorMessage }`)
+    const switchCondition = `${verifiedEmail}-${verifiedPassword}`
 
-      const jsonBody = { error: errorMessage }
-      const responseInit = { 
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-      return NextResponse.json(jsonBody, responseInit)
-    } else {
-      const jsonBody = { message: 'Signed in' }
-      const responseInit = { 
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-  
-      return NextResponse.json(jsonBody, responseInit)
-      // TODO: Generate JWT or encrypted session, set cookie
-      // Example: cookies().set('session', token, { httpOnly: true, ... })
-    }
+    return await verifiedEmailAndPassword(
+      switchCondition,
+      cookies,
+      email,
+      storedPassword,
+    )
   } catch (error) {
     const consoleMetadata = getConsoleMetadata(
-      CONSOLE_LEVEL,
+      LOG_TYPE,
       false,
       FILE_PATH,
       'POST()'

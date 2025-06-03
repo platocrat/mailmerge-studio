@@ -10,7 +10,7 @@ import type {
 import { getConsoleMetadata } from '@/utils/misc'
 
 // Constants
-const CONSOLE_LEVEL = 'SERVER'
+const LOG_TYPE = 'SERVER'
 const FILE_PATH = 'src/services/postmark/postmarkService.ts'
 
 
@@ -109,7 +109,7 @@ class PostmarkService {
       await this.client.sendEmail(email)
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'PostmarkService.sendDashboardEmail()'
@@ -161,7 +161,7 @@ class PostmarkService {
       return await this.client.sendEmail(message)
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
-        CONSOLE_LEVEL,
+        LOG_TYPE,
         false,
         FILE_PATH,
         'PostmarkService.sendEmail()'

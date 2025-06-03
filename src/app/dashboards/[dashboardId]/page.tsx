@@ -1,7 +1,6 @@
 'use client'
 
 // Externals
-import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import React, { useState, useEffect } from 'react'
 import { ChevronLeft, Download, Share2, Mail } from 'lucide-react'
@@ -9,6 +8,7 @@ import { ChevronLeft, Download, Share2, Mail } from 'lucide-react'
 import { postmarkService } from '@/services'
 import DataVisualization from '@/components/DataViz/SampleDataViz'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
+import ProgressBarLink from '@/components/Progress/ProgressBarLink'
 
 
 // Sample dashboard data
@@ -83,7 +83,7 @@ const _ = () => {
   }
 
   const handleShare = () => {
-    alert('Dashboard share link copied! (Demo functionality)')
+    alert('Dashboard share ProgressBarLink copied! (Demo functionality)')
   }
 
   const handleSendEmail = async (to: string, subject: string, additionalMessage: string) => {
@@ -131,13 +131,13 @@ const _ = () => {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         {/* Breadcrumb */ }
         <div className='mb-6'>
-          <Link
+          <ProgressBarLink
             href={ `/projects/${dashboard.projectId}` }
             className='text-blue-600 hover:text-blue-800 flex items-center'
           >
             <ChevronLeft className='h-4 w-4 mr-1' />
             { `Back to ${ dashboard.projectName }` }
-          </Link>
+          </ProgressBarLink>
         </div>
 
         {/* Dashboard header */ }
