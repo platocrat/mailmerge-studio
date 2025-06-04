@@ -1,8 +1,17 @@
-export interface AttachmentMetadata {
+// The original attachment from Postmark/email webhook
+export type EmailAttachment = {
+  name: string      // filename
+  type: string      // mimetype, e.g., 'application/pdf', 'image/png'
+  content: string   // base64-encoded file content (raw, not a URL)
+  size?: number     // optional, can be included for metadata
+}
+
+// After storing in R2:
+export type AttachmentMetadata = {
   name: string
   type: string
-  size: number
-  url: string
+  size?: number
+  url: string      // R2 storage URL
 }
 
 export interface STORED_OPENAI_URLS__R2 {

@@ -1,3 +1,4 @@
+// src/services/data/processing-service/index.ts
 // Externals
 import {
   QueryCommand,
@@ -9,6 +10,7 @@ import {
 import { 
   ddbDocClient,
   DYNAMODB_TABLE_NAMES,
+  getConsoleMetadata,
 } from '@/utils'
 import type { 
   ATTACHMENT__POSTMARK,
@@ -17,12 +19,17 @@ import type {
   STORED_OPENAI_URLS__R2,
   DATA_ANALYSIS_RESULT__OPENAI,
   ExtractedInboundEmailData,
+  EmailAttachment,
 } from '@/types'
 import { r2Service } from '@/services/data/cloudflare-r2'
 // Add dedicated import for OpenAI service
 import { openaiService } from '@/services/open-ai'
 // Data processing types
 import { dynamoService } from '@/services/data'
+
+
+const LOG_TYPE = 'API_CALL'
+const FILE_NAME = 'src/services/data/processing-service/index.ts'
 
 /**
  * @dev Data processing service for handling email data
@@ -64,72 +71,54 @@ class DataProcessingService {
     }
 
     try {
-      // Process attachments and store in R2
-      if (extractedEmailData.attachments.length > 0) {
-        const attachments = extractedEmailData.attachments.map((
-          attachment
-        ) => ({
-          Name: attachment.name,
-          Content: attachment.content || '',
-          ContentType: attachment.type,
-          ContentLength: attachment.size
-        }))
+      // --- A. Prepare attachments for OpenAI (keep original content) ---
+      const attachmentsForOpenAI: EmailAttachment[] = extractedEmailData.attachments.map(
+        (attachment) => ({
+          name: attachment.name,
+          type: attachment.type,
+          content: attachment.content,  // base64 as received
+          size: attachment.size
+        })
+      )
 
-        const processedAttachments = await DataProcessingService.R2.processAttachments(
+      // --- B. Analyze with OpenAI ---
+      const analysisResult = await DataProcessingService.OpenAI.analyzeEmail(
+        extractedEmailData.textBody,
+        attachmentsForOpenAI
+      )
+
+      // --- C. Store original attachments in R2 ---
+      let processedAttachments: AttachmentMetadata[] = []
+      
+      if (attachmentsForOpenAI.length > 0) {
+        processedAttachments = await DataProcessingService.R2.processAttachments(
           extractedEmailData.projectId,
           extractedEmailData.id,
-          attachments,
-        )
-
-        processedInboundEmail.attachments = processedAttachments
-        processedInboundEmail.attachmentUrls = processedAttachments.map(
-          (a: AttachmentMetadata): string => a.url
+          attachmentsForOpenAI
         )
       }
 
-      // Use OpenAI to analyze the data
-      const analysisResult = await DataProcessingService.OpenAI.analyzeEmail(
-        extractedEmailData.textBody,
-        processedInboundEmail.attachments
-      )
+      processedInboundEmail.attachments = processedAttachments
+      processedInboundEmail.attachmentUrls = processedAttachments.map(a => a.url)
 
-      // Store OpenAI outputs in R2
+      // --- D. Store OpenAI outputs (summary & charts) in R2 ---
       const { 
-        summaryFileUrl, 
-        visualizationUrls
+        summaryFileUrl,
+        visualizationUrls 
       } = await DataProcessingService.R2.storeOpenAiOutputs(
         extractedEmailData.projectId,
         extractedEmailData.id,
         analysisResult
       )
 
-      // Update processed data with R2 URLs
       processedInboundEmail.summaryFileUrl = summaryFileUrl
       processedInboundEmail.visualizationUrls = visualizationUrls
 
-      // Prepare new processed inbound email entry
-      const processedInboundEmailItem: ProcessedInboundEmail = {
-        id: extractedEmailData.projectId, // DynamoDB Partition Key
-        // accountId: extractedEmailData.accountId, // DynamoDB Sort Key
-        sourceEmailId: extractedEmailData.id,
-        processedAt: processedInboundEmail.processedAt,
-        fromEmail: extractedEmailData.fromEmail,
-        fromName: extractedEmailData.fromName,
-        subject: extractedEmailData.subject,
-        textContent: extractedEmailData.textBody,
-        receivedAt: extractedEmailData.receivedAt,
-        summaryFileUrl,
-        visualizationUrls,
-        attachmentUrls: processedInboundEmail.attachmentUrls,
-        attachments: processedInboundEmail.attachments,
-      }
-      // Save processed inbound email to DynamoDB
+      // --- E. Save processedInboundEmail to DynamoDB ---
       await dynamoService.addEmailToProject(
-        extractedEmailData.projectId,
-        processedInboundEmailItem
-      );
-
-      // Update project status
+        extractedEmailData.projectId, 
+        processedInboundEmail
+      )
       await dynamoService.updateProjectStatus(
         extractedEmailData.projectId, 
         'Active', 
@@ -138,7 +127,13 @@ class DataProcessingService {
 
       return processedInboundEmail
     } catch (error) {
-      console.error('Error processing email data:', error)
+      const consoleMetadata: string = getConsoleMetadata(
+        LOG_TYPE, 
+        false,
+        FILE_NAME, 
+        'processInboundEmailData()'
+      )
+      console.error(`${consoleMetadata} Error processing email data: `, error)
       throw error
     }
   }
@@ -166,34 +161,41 @@ class DataProcessingService {
     static async processAttachments(
       projectId: string,
       emailId: string,
-      attachments: ATTACHMENT__POSTMARK[],
+      attachments: EmailAttachment[],
     ): Promise<AttachmentMetadata[]> {
       const processedAttachments: AttachmentMetadata[] = []
+
       for (const attachment of attachments) {
         try {
-          // Convert base64 to original file
-          const fileContent = DataProcessingService.R2.base64ToFile(
-            attachment.Content, 
-            attachment.ContentType
+          const fileContent = Buffer.from(
+            attachment.content.replace(/^data:.*?;base64,/, ''), 
+            'base64'
           )
-          // Generate a key for the attachment
-          const key = `${projectId}/${emailId}/${attachment.Name}`
-          // Store the attachment in R2
+          const key = `${projectId}/${emailId}/${attachment.name}`
+
           const url = await r2Service.storeFile(
-            key,
-            fileContent.toString('base64'),
-            attachment.ContentType,
+            key, 
+            fileContent.toString('base64'), 
+            attachment.type
           )
+
           processedAttachments.push({
-            name: attachment.Name,
-            type: attachment.ContentType,
-            size: attachment.ContentLength,
-            url
+            name: attachment.name, 
+            type: attachment.type, 
+            size: attachment.size, 
+            url 
           })
-        } catch (error) {
-          console.error('Error storing attachment:', error)
+        } catch (error) { 
+          const consoleMetadata: string = getConsoleMetadata(
+            LOG_TYPE, 
+            false,
+            FILE_NAME, 
+            'processAttachments()'
+          )
+          console.error(`${consoleMetadata} Error storing attachment: `, error)
         }
       }
+
       return processedAttachments
     }
 
@@ -260,22 +262,11 @@ class DataProcessingService {
      */
     static async analyzeEmail(
       textBody: string,
-      attachments: AttachmentMetadata[]
+      // NOTE: now accepts original attachments, not processed metadata!
+      attachments: { name: string, type: string, content: string }[]
     ): Promise<DATA_ANALYSIS_RESULT__OPENAI> {
-      const mappedAttachments = attachments.map((
-        attachment: AttachmentMetadata
-      ) => ({
-        name: attachment.name,
-        type: attachment.type,
-        content: attachment.url // Pass the URL instead of content since we're storing files in R2
-      }))
-
-      const analysisResult = await openaiService.analyzeData(
-        textBody, 
-        mappedAttachments
-      )
-
-      return analysisResult
+      // Just pass as-is
+      return await openaiService.analyzeData(textBody, attachments)
     }
   }
 }

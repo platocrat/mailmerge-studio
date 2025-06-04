@@ -1,8 +1,9 @@
+// src/services/open-ai/index.ts
 // Externals
 import OpenAI from 'openai'
 // Locals
 import { getConsoleMetadata, MODEL } from '@/utils'
-import { DATA_ANALYSIS_RESULT__OPENAI } from '@/types'
+import { DATA_ANALYSIS_RESULT__OPENAI, EmailAttachment } from '@/types'
 
 
 // ----------------------- Console metadata constants --------------------------
@@ -50,18 +51,19 @@ class OpenAIService {
    */
   async analyzeData(
     textBody: string,
-    attachments: { name: string; type: string; content: string }[]
+    attachments: EmailAttachment[]
   ): Promise<DATA_ANALYSIS_RESULT__OPENAI> {
     try {
       // 1. Upload files to OpenAI
       const uploadedFiles: string[] = await Promise.all(
         // Generate a list of uploaded file IDs for the attachments
         attachments.map(
-          async (attachment: { name: string; type: string; content: string }) => {
-            const fileBuffer = Buffer.from(attachment.content, "base64")
-            const fileBlob = new Blob([fileBuffer], {
-              type: attachment.type
-            })
+          async (attachment: EmailAttachment) => {
+            const fileBuffer = Buffer.from(
+              attachment.content.replace(/^data:.*?;base64,/, ''), 
+              'base64'
+            )
+            const fileBlob = new Blob([fileBuffer], { type: attachment.type })
             const file = new File([fileBlob], attachment.name)
             const purpose: OpenAI.Files.FilePurpose = 'assistants'
             // Upload the file to OpenAI
