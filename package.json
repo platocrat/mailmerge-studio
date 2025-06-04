@@ -24,8 +24,10 @@
   "packageManager": "^npm@10.9.2",
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.821.0",
+    "@aws-sdk/client-s3": "^3.823.0",
     "@aws-sdk/client-ssm": "^3.821.0",
     "@aws-sdk/lib-dynamodb": "^3.821.0",
+    "@aws-sdk/s3-request-presigner": "^3.823.0",
     "@cloudflare/workers-types": "^4.20250531.0",
     "@hcaptcha/react-hcaptcha": "^1.12.0",
     "@tailwindcss/postcss": "^4.1.8",
