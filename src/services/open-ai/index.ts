@@ -165,16 +165,39 @@ class OpenAIService {
       }
 
       // Iterate through the outputs and extract image files
-      response.output.forEach((output: any) => {
+      response.output.forEach((output: any, i: number) => {
+        const consoleMetadata: string = getConsoleMetadata(
+          LOG_TYPE, 
+          true,
+          FILE_NAME, 
+          'analyzeData()'
+        )
+        console.log(`${consoleMetadata} response.output[${i}]: `, output)
+
         if (
           output.type === 'code_interpreter_call' &&
           output.outputs.length > 0
         ) {
+          // Iterate through the outputs of the code interpreter call
           for (const outputItem of output.outputs) {
             if (outputItem.type === 'image') {
               result.imageFiles.push(outputItem.url)
             }
           }
+        } else if (output.type === 'message') {
+          // Iterate through the content of the message
+          output.content.forEach((contentItem: any, j: number) => {
+            const consoleMetadata: string = getConsoleMetadata(
+              LOG_TYPE, 
+              true,
+              FILE_NAME, 
+              'analyzeData()'
+            )
+            console.log(
+              `${consoleMetadata} response.output[${i}].content[${j}]: `,
+              contentItem
+            )
+          })
         }
       })
 
