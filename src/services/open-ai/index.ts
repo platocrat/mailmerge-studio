@@ -2,7 +2,7 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { getConsoleMetadata, MODEL } from '@/utils'
+import { getConsoleMetadata, MODEL, readableStreamToBuffer } from '@/utils'
 import { DATA_ANALYSIS_RESULT__OPENAI, EmailAttachment } from '@/types'
 
 
@@ -206,14 +206,20 @@ class OpenAIService {
             result.textContent += content.text.value + '\n'
           // Process the image file
           } else if (content.type === 'image_file') {
-            // Download the image file
-            const imageContent = await client.files.retrieve(
-              content.image_file.file_id
+            // Fetch actual file bytes using .content()
+            const fileId = content.image_file.file_id
+
+            // Download file content as a stream (Node.js, OpenAI SDK v4+)
+            const fileResponse: Response = await client.files.content(fileId)
+            // fileResponse.body is a ReadableStream, get Buffer
+            const fileBuffer = await readableStreamToBuffer(
+              LOG_TYPE,
+              FILE_NAME,
+              fileResponse.body
             )
-            // Convert the image content to a buffer
-            const imageContentBuffer = Buffer.from(imageContent.toString())
-            // Add the image content to the result
-            result.imageFiles.push(imageContentBuffer.toString('base64'))
+
+            // Now push base64
+            result.imageFiles.push(fileBuffer.toString('base64'))
           }
         }
       }

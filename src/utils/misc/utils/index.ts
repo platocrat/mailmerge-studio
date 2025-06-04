@@ -76,3 +76,39 @@ export function debounce(fn: any, delay: number): ((...args: any) => void) {
     timer = setTimeout(() => fn(...args), delay)
   }
 }
+
+
+
+/**
+ * @dev Utility function to convert ReadableStream to Buffer
+ * @param stream - The stream to convert
+ * @returns The buffer
+ */
+export async function readableStreamToBuffer(
+  logType: 'CLIENT' | 'SERVER' | 'API_CALL',
+  fileName: string,
+  stream: ReadableStream<Uint8Array> | null
+): Promise<Buffer> {
+  if(!stream) {
+    const consoleMetadata: string = getConsoleMetadata(
+      logType,
+      false,
+      fileName,
+      'readableStreamToBuffer()'
+    )
+    console.error(`${consoleMetadata} No stream found in file response`)
+    throw new Error('No stream found in file response')
+  }
+
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+
+  while(true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    if (value) chunks.push(value)
+  }
+
+  // Concatenate all chunks into one Buffer
+  return Buffer.concat(chunks.map(chunk => Buffer.from(chunk)))
+}
