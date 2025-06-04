@@ -38,9 +38,32 @@ class OpenAIService {
 
     * Each chart should have a clear title, labeled axes, and a legend if needed.
 
-    * Summarize the most important findings below each chart, noting patterns, significant changes, or insights discovered through the analysis.
+    * Summarize the most important findings for all of the generated charts, noting patterns, significant changes, or insights discovered through the analysis.
 
     Do not assume any specific schema—analyze each file independently and infer the most relevant comparisons and visual representations based on the data it contains.
+
+    Lastly, for each data visualization you create, use Python's matplotlib or seaborn to generate the chart, save it as a PNG file, and upload it as an image attachment so it is available in your response as a downloadable file. Please be sure to follow the same format; that is, the \`outputs\` property MUST be an array of objects with a \`type\` property of \`image\` (NOT \`log\`) and a \`url\` property of the base64-encoded image data:
+    
+    * Here is an example of a returned message from a code interpreter call that generated two images and attached them to the \`outputs\` property. Please be sure to follow the same format; that is, the \`outputs\` property MUST be an array of objects with a \`type\` property of \`image\` (NOT \`log\`) and a \`url\` property of the base64-encoded image data:
+    \`\`\`json
+    {
+      "id": "ci_6840919b116481a1b7148c65a066db790ca72d1ea1bce6a8",
+      "type": "code_interpreter_call",
+      "status": "completed",
+      "code": "# 3. Employee Performance Ratings - Bar chart for each employee's scores\n\nemployees = employee_perf_data\n\n# Extracting score categories\ncategories = list(employees[0]['scores'].keys())\n\n# Plotting\nplt.figure(figsize=(10, 6))\nfor employee in employees:\n    scores = list(employee['scores'].values())\n    plt.bar(employee['name'], scores, label=employee['name'])\n\n# Instead of individual bars, creating a grouped bar chart for better comparison\nimport numpy as np\n\nnames = [emp['name'] for emp in employees]\nscores_data = np.array([list(emp['scores'].values()) for emp in employees])\n\nx = np.arange(len(names))\nwidth = 0.15\n\nplt.figure(figsize=(12, 6))\nfor i, category in enumerate(categories):\n    plt.bar(x + i*width, scores_data[:, i], width=width, label=category)\n\nplt.xlabel('Employees')\nplt.ylabel('Scores')\nplt.title('Employee Performance Scores by Category')\nplt.xticks(x + width * (len(categories) - 1) / 2, names, rotation=45)\nplt.legend(title='Categories')\nplt.tight_layout()\n\n# Save the figure\nemployee_scores_image_path = \"/mnt/data/employee_scores.png\"\nplt.savefig(employee_scores_image_path)\nplt.show()",
+      "container_id": "cntr_68409172241481919529f4801be8b7f30be2b968ff11339f",
+      "outputs": [
+        {
+          "type": "image",
+          "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABlUAAAPuCAYAAACRpZsyAAAAOXRFWHRTb2IiIiIiIikoFJFSIiIiIiIiIiIiIiIhmYVCEiIiIiIiIiIiIiIpKBSRUiIiIiIiIiIiIiIiIZ/h9/pkyslhMgMAAAAABJRU5ErkJggg=="
+        },
+        {
+          "type": "image",
+          "url": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACUsAAAScCAYAAAC4d0zrAAAAOXRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjYuMywgaHR0cHM6Ly9tYXRwbG90bGliLm9yZy/P9b71AAAACXBIWXMAAB7CAAAewgFu0HU+AAEAAElEQVR4nOzdd3gU9drG8TuFdJIQQm+h945SpIuIVKmCHDygAh7bQcADogKigA1EDypiARSQItJBioB06TX0EggQIJACaaS9f+TNnkw2u9="
+        }
+      ]
+    }
+    \`\`\`
   `
 
   /**
@@ -86,154 +109,76 @@ class OpenAIService {
         uploadedFiles
       )
 
-      const name = 'Data Analysis Assistant'
-      const instructions = `You are a data analysis expert. Analyze the provided data and generate visualizations with insights.`
-
-      // 2. Create an assistant
-      const assistant = await client.beta.assistants.create({
-        name,
-        model: MODEL,
-        instructions,
-        tools: [
-          { type: "code_interpreter" }
-        ],
-      } as OpenAI.Beta.Assistants.AssistantCreateParams)
-
-      console.log(
-        `${ consoleMetadata  } assistant: `,
-        assistant
-      )
-
-      // 3. Create a thread
-      const thread = await client.beta.threads.create()
-
-      console.log(
-        `${ consoleMetadata  } initialized thread: `,
-        thread
-      )
-
-      // 4. Add the analysis prompt and file attachments to the thread
-      await client.beta.threads.messages.create(
-        thread.id, 
+      // 2. Construct the input for the Responses API
+      // First, system (prompt) message:
+      const inputArray: any[] = [
         {
-          role: "user",
-          // content: [
-          //   { type: 'input_text', text: this.ANALYSIS_PROMPT }
-          // ]
-          content: this.ANALYSIS_PROMPT,
-          // Attach the files at the Thread level, making them only accessible 
-          // within the specific thread.
-          attachments: uploadedFiles.map((fileId: string) => ({
-            tools: [
-              { type: "code_interpreter" }
-            ],
-            file_id: fileId
-          }))
-        }
-      )
-
-      console.log(
-        `${ consoleMetadata  } thread AFTER messages.create(): `,
-        thread
-      )
-
-      // 5. Run the assistant
-      const run = await client.beta.threads.runs.createAndPoll(
-        thread.id, 
-        { 
-          assistant_id: assistant.id,
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: this.ANALYSIS_PROMPT
+            }
+          ]
         },
-        { pollIntervalMs: 2_000 }
-      )
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: textBody // Or another summary string if desired
+            }
+          ]
+        }
+      ]
 
-      console.log(
-        `${ consoleMetadata  } running the assistant with 'createdAndPoll()': `,
-        run
-      )
+      // 3. Send the request to the Responses API
+      const response = await client.responses.create({
+        model: MODEL, // e.g. "gpt-4o", "gpt-4-1106-preview", etc.
+        input: inputArray,
+        tools: [
+          {
+            type: 'code_interpreter',
+            container: {
+              type: 'auto',
+              file_ids: uploadedFiles
+            }
+          }
+        ],
+        temperature: 1,
+        max_output_tokens: 2048,
+        top_p: 1,
+        store: true // allows you to fetch files after
+      })
 
-      // 6. Poll for completion
-      let runStatus = run.status
+      console.log(`${consoleMetadata} response: `, response)
 
-      while (
-        runStatus !== 'completed' && 
-        runStatus !== 'failed' && 
-        runStatus !== 'cancelled'
-      ) {
-        const runResult = await client.beta.threads.runs.retrieve(
-          run.id,
-          { thread_id: thread.id }, 
-        )
-
-        console.log(
-          `${ consoleMetadata  } runResult with 'retrieve()': `,
-          runResult
-        )
-
-        runStatus = runResult.status
-       
-        console.log(
-          `${ consoleMetadata  } runStatus: `, 
-          runStatus
-        )
-      }
-
-      if (runStatus !== 'completed') {
-        throw new Error(`Run failed with status: ${ runStatus }`)
-      }
-
-      // 7. Get the messages from the thread
-      const messages = await client.beta.threads.messages.list(thread.id)
-      const assistantMessages = messages.data.filter(
-        (msg: OpenAI.Beta.Threads.Message): boolean => msg.role === 'assistant'
-      )
-
-      console.log(
-        `${ consoleMetadata  } assistantMessages are a filtered thread's messages with 'list()': `,
-        assistantMessages
-      )
-
-      // 8. Process the messages
+      // 4. Extract results: text and any image files from the outputs
       const result: DATA_ANALYSIS_RESULT__OPENAI = {
         textContent: '',
         imageFiles: []
       }
 
-      // Process the messages
-      for (const message of assistantMessages) {
-        for (const content of message.content) {
-          // Process the text content
-          if (content.type === 'text') {
-            result.textContent += content.text.value + '\n'
-          // Process the image file
-          } else if (content.type === 'image_file') {
-            // Fetch actual file bytes using .content()
-            const fileId = content.image_file.file_id
-
-            // Download file content as a stream (Node.js, OpenAI SDK v4+)
-            const fileResponse: Response = await client.files.content(fileId)
-            // fileResponse.body is a ReadableStream, get Buffer
-            const fileBuffer = await readableStreamToBuffer(
-              LOG_TYPE,
-              FILE_NAME,
-              fileResponse.body
-            )
-
-            // Now push base64
-            result.imageFiles.push(fileBuffer.toString('base64'))
-          }
-        }
+      // Look for output_text content in the top-level response
+      if (response.output_text) {
+        result.textContent += response.output_text + '\n'
       }
 
-      console.log(
-        `${ consoleMetadata  } result after processing the 'assistantMessages': `,
-        result
-      )
+      // Iterate through the outputs and extract image files
+      response.output.forEach((output: any) => {
+        if (
+          output.type === 'code_interpreter_call' &&
+          output.outputs.length > 0
+        ) {
+          for (const outputItem of output.outputs) {
+            if (outputItem.type === 'image') {
+              result.imageFiles.push(outputItem.url)
+            }
+          }
+        }
+      })
 
-      // 9. Clean up
-      await client.beta.assistants.delete(assistant.id)
-      await client.beta.threads.delete(thread.id)
-
-      // Clean up the uploaded files
+      // 5. Clean up: delete uploaded files
       for (const fileId of uploadedFiles) {
         await client.files.delete(fileId)
       }
