@@ -35,10 +35,10 @@ export async function POST(request: NextRequest) {
     
     // Parse the request body
     const postmarkInboundEmail: INBOUND_EMAIL__POSTMARK = await request.json()
-    console.log(
-      `postmarkInboundEmail: `,
-      JSON.stringify(postmarkInboundEmail, null, 2)
-    )
+    // console.log(
+    //   `postmarkInboundEmail: `,
+    //   JSON.stringify(postmarkInboundEmail, null, 2)
+    // )
 
     // Extract the inbound email data using PostmarkService
     const extractedInboundEmailData = postmarkService.extractInboundEmailData(
