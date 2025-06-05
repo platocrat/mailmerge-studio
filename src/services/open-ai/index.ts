@@ -154,63 +154,112 @@ class OpenAIService {
       console.log(`${consoleMetadata} response: `, response)
 
       // 4. Extract results: text and any image files from the outputs
-      const result: DATA_ANALYSIS_RESULT__OPENAI = {
-        textContent: '',
-        imageFiles: []
+      // const result: DATA_ANALYSIS_RESULT__OPENAI = {
+      //   textContent: '',
+      //   imageFiles: []
+      // }
+
+      type ExtractionResult = {
+        textContent: string
+        imageFiles: string[]
       }
 
-      // Look for `output_text` content in the top-level response
-      if (response.output_text) {
-        const consoleMetadata: string = getConsoleMetadata(
-          LOG_TYPE, 
-          true,
-          FILE_NAME, 
-          'analyzeData()'
-        )
-        console.log(
-          `${consoleMetadata} response.output_text: `, 
-          response.output_text
-        )
-
-        result.textContent += response.output_text + '\n'
-      }
-
-      // Iterate through the outputs and extract image files
-      response.output.forEach((output: any, i: number) => {
-        const consoleMetadata: string = getConsoleMetadata(
-          LOG_TYPE, 
-          true,
-          FILE_NAME, 
-          'analyzeData()'
-        )
-        console.log(`${consoleMetadata} response.output[${i}]: `, output)
-
-        if (
-          output.type === 'code_interpreter_call' &&
-          output.outputs.length > 0
-        ) {
-          // Iterate through the outputs of the code interpreter call
-          for (const outputItem of output.outputs) {
-            if (outputItem.type === 'image') {
-              result.imageFiles.push(outputItem.url)
-            }
+      /**
+       * @dev Recursively extracts text content and image file URLs from any 
+       * OpenAI response structure.
+       */
+      function extractOpenAIResponse(
+        obj: any,
+        acc: ExtractionResult = { textContent: '', imageFiles: [] }
+      ): ExtractionResult {
+        if (Array.isArray(obj)) {
+          for (const item of obj) {
+            extractOpenAIResponse(item, acc)
           }
-        } else if (output.type === 'message') {
-          // Iterate through the content of the message
-          output.content.forEach((contentItem: any, j: number) => {
-            const consoleMetadata: string = getConsoleMetadata(
-              LOG_TYPE, 
-              true,
-              FILE_NAME, 
-              'analyzeData()'
-            )
-            console.log(
-              `${consoleMetadata} response.output[${i}].content[${j}]: `,
-              contentItem
-            )
-          })
+        } else if (obj && typeof obj === 'object') {
+          // Extract text from message/content types
+          if (
+            (obj.type === 'text' || obj.type === 'output_text') &&
+            typeof obj.text === 'string'
+          ) {
+            acc.textContent += `${obj.text}\n`
+          }
+          // Extract images from code interpreter outputs
+          if (
+            obj.type === 'image' &&
+            typeof obj.url === 'string'
+          ) {
+            acc.imageFiles.push(obj.url)
+          }
+
+          // Sometimes, `output_text` can appear at the top level
+          if (typeof obj.output_text === 'string') {
+            acc.textContent += `${obj.output_text}\n`
+          }
+
+          // Recursively search all properties
+          for (const key of Object.keys(obj)) {
+            extractOpenAIResponse(obj[key], acc)
+          }
         }
-      })
+        return acc
+      }
+
+      // Example usage after your response:
+      const result = extractOpenAIResponse(response)
+
+      // // Look for `output_text` content in the top-level response
+      // if (response.output_text) {
+      //   const consoleMetadata: string = getConsoleMetadata(
+      //     LOG_TYPE, 
+      //     true,
+      //     FILE_NAME, 
+      //     'analyzeData()'
+      //   )
+      //   console.log(
+      //     `${consoleMetadata} response.output_text: `, 
+      //     response.output_text
+      //   )
+
+      //   result.textContent += response.output_text + '\n'
+      // }
+
+      // // Iterate through the outputs and extract image files
+      // response.output.forEach((output: any, i: number) => {
+      //   const consoleMetadata: string = getConsoleMetadata(
+      //     LOG_TYPE, 
+      //     true,
+      //     FILE_NAME, 
+      //     'analyzeData()'
+      //   )
+      //   console.log(`${consoleMetadata} response.output[${i}]: `, output)
+
+      //   if (
+      //     output.type === 'code_interpreter_call' &&
+      //     output.outputs.length > 0
+      //   ) {
+      //     // Iterate through the outputs of the code interpreter call
+      //     for (const outputItem of output.outputs) {
+      //       if (outputItem.type === 'image') {
+      //         result.imageFiles.push(outputItem.url)
+      //       }
+      //     }
+      //   } else if (output.type === 'message') {
+      //     // Iterate through the content of the message
+      //     output.content.forEach((contentItem: any, j: number) => {
+      //       const consoleMetadata: string = getConsoleMetadata(
+      //         LOG_TYPE, 
+      //         true,
+      //         FILE_NAME, 
+      //         'analyzeData()'
+      //       )
+      //       console.log(
+      //         `${consoleMetadata} response.output[${i}].content[${j}]: `,
+      //         contentItem
+      //       )
+      //     })
+      //   }
+      // })
 
       // 5. Clean up: delete uploaded files
       for (const fileId of uploadedFiles) {

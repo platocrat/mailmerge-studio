@@ -105,7 +105,7 @@ class DataProcessingService {
       const { 
         summaryFileUrl,
         visualizationUrls 
-      } = await DataProcessingService.R2.storeOpenAiOutputs(
+      } = await DataProcessingService.R2.storeOpenAIOutputs(
         extractedEmailData.projectId,
         extractedEmailData.id,
         analysisResult
@@ -217,7 +217,7 @@ class DataProcessingService {
      * @param analysisResult - The analysis result
      * @returns The summary file URL and visualization URLs
      */
-    static async storeOpenAiOutputs(
+    static async storeOpenAIOutputs(
       projectId: string,
       emailId: string,
       analysisResult: { textContent: string; imageFiles: string[] }
@@ -248,8 +248,8 @@ class DataProcessingService {
         )
       )
 
-      const storedOpenAiUrls = { summaryFileUrl, visualizationUrls }
-      return storedOpenAiUrls
+      const storedOpenAIUrls = { summaryFileUrl, visualizationUrls }
+      return storedOpenAIUrls
     }
   }
 
