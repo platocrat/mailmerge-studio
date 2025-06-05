@@ -202,11 +202,24 @@ class OpenAIService {
             extractOpenAIResponse(obj[key], acc)
           }
         }
+
         return acc
       }
 
       // Example usage after your response:
       const result = extractOpenAIResponse(response)
+
+      console.log(
+        `${ 
+          getConsoleMetadata(
+            LOG_TYPE, 
+            true,
+            FILE_NAME, 
+            'analyzeData()'
+          )
+        } result: `, 
+        result
+      )
 
       // // Look for `output_text` content in the top-level response
       // if (response.output_text) {
