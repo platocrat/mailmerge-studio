@@ -159,8 +159,19 @@ class OpenAIService {
         imageFiles: []
       }
 
-      // Look for output_text content in the top-level response
+      // Look for `output_text` content in the top-level response
       if (response.output_text) {
+        const consoleMetadata: string = getConsoleMetadata(
+          LOG_TYPE, 
+          true,
+          FILE_NAME, 
+          'analyzeData()'
+        )
+        console.log(
+          `${consoleMetadata} response.output_text: `, 
+          response.output_text
+        )
+
         result.textContent += response.output_text + '\n'
       }
 

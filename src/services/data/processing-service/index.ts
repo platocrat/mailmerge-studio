@@ -223,11 +223,11 @@ class DataProcessingService {
       analysisResult: { textContent: string; imageFiles: string[] }
     ): Promise<STORED_OPENAI_URLS__R2> {
       const key = `${projectId}/${emailId}/summary.txt`
-      const base64Data = analysisResult.textContent
+      const textContent = analysisResult.textContent
       const contentType = 'text/plain'
       const summaryFileUrl = await r2Service.storeFile(
         key,
-        base64Data,
+        textContent,
         contentType,
       )
 
