@@ -323,6 +323,39 @@ It is a web services provider like [Fly.io](https://fly.io), but we're only usin
       --archive-docker-dockerfile Dockerfile
    ```
 
+**3. Verify the service worker is consuming messages**
+
+   ```bash
+   koyeb logs worker               # live stdout/stderr
+   koyeb service describe worker   # status, instance type, restarts
+   ```
+
+   You should see the Node process log something like `Connected to AMQP… Waiting for jobs`.
+
+**4. Automatic redeploys on every git push**
+
+   By default, any new commit to the branch you selected (here `main`) triggers:
+
+   ```bash
+   clone → docker build → push → rollout
+   ```
+
+   If you’d rather pin a specific tag or deploy manually, redeploy with
+
+   ```bash
+   koyeb service redeploy worker --git-ref v1.2.3
+   ```
+
+
+
+**5. Environment changes without downtime**
+
+   ```bash
+   koyeb service env set worker CLOUDAMQP_URL=amqps://user:pass@host/vhost
+   ```
+
+   Koyeb rolls a new deployment, waits for health checks to pass, then swaps traffic.
+
 ## License
 
 MIT
