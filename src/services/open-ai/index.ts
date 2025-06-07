@@ -2,7 +2,8 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { getConsoleMetadata, MODEL, readableStreamToBuffer } from '@/utils'
+import { MODEL } from '@/lib'
+import { getConsoleMetadata, readableStreamToBuffer } from '@/utils'
 import { DATA_ANALYSIS_RESULT__OPENAI, EmailAttachment } from '@/types'
 
 
@@ -165,8 +166,8 @@ class OpenAIService {
       }
 
       /**
-       * @dev Recursively extracts text content and image file URLs from any 
-       * OpenAI response structure.
+       * @dev Recursively extracts text content and images from any OpenAI 
+       * response structure.
        */
       function extractOpenAIResponse(
         obj: any,

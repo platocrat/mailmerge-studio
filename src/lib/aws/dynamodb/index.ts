@@ -1,3 +1,4 @@
+// src/lib/aws/dynamodb/index.ts
 // Externals
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'

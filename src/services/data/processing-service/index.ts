@@ -7,11 +7,6 @@ import {
   UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb'
 // Locals
-import { 
-  ddbDocClient,
-  DYNAMODB_TABLE_NAMES,
-  getConsoleMetadata,
-} from '@/utils'
 import type { 
   ATTACHMENT__POSTMARK,
   ProcessedInboundEmail,
@@ -21,11 +16,13 @@ import type {
   ExtractedInboundEmailData,
   EmailAttachment,
 } from '@/types'
-import { r2Service } from '@/services/data/cloudflare-r2'
-// Add dedicated import for OpenAI service
+import { 
+  ddbDocClient,
+  DYNAMODB_TABLE_NAMES,
+} from '@/lib'
+import { getConsoleMetadata } from '@/utils'
 import { openaiService } from '@/services/open-ai'
-// Data processing types
-import { dynamoService } from '@/services/data'
+import { dynamoService, r2Service } from '@/services/data'
 
 
 const LOG_TYPE = 'API_CALL'
@@ -248,8 +245,8 @@ class DataProcessingService {
         )
       )
 
-      const storedOpenAIUrls = { summaryFileUrl, visualizationUrls }
-      return storedOpenAIUrls
+      const storedOpenAiUrls = { summaryFileUrl, visualizationUrls }
+      return storedOpenAiUrls
     }
   }
 

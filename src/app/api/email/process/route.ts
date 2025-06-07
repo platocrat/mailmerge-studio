@@ -1,35 +1,34 @@
-// src/app/api/postmark/webhook/inbound/route.ts
+// src/app/api/email/process/route.ts
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
 import type { 
-  INBOUND_EMAIL__POSTMARK,
   ExtractedInboundEmailData,
+  ProcessedInboundEmail,
 } from '@/types'
-import { postmarkService } from '@/services'
+import { dataProcessingService } from '@/services/data/processing-service'
 import { getConsoleMetadata } from '@/utils'
-import { publishEmail } from '@/lib/cloud-amqp'
 
 
 const LOG_TYPE = 'API_CALL'
-const FILE_NAME: string = 'src/app/api/postmark/webhook/inbound/route.ts'
+const FILE_NAME: string = 'src/app/api/email/process/route.ts'
 
 
 // ------------------------------ POST Request ---------------------------------
 export async function POST(request: NextRequest) {
-  try {    
+  try {
     // Parse the request body
-    const inboundEmail: INBOUND_EMAIL__POSTMARK = await request.json()
+    const extractedInboundEmailData: ExtractedInboundEmailData = await request.json()
 
-    // Extract the inbound email data using PostmarkService
-    const extractedInboundEmailData: ExtractedInboundEmailData = 
-      postmarkService.extractInboundEmailData(inboundEmail)
+    // Process the email data using DataProcessingService
+    const processedInboundEmail: ProcessedInboundEmail = 
+      await dataProcessingService.processInboundEmailData(
+        extractedInboundEmailData
+      )
 
-    // Enqueue (single network round‑trip to CloudAMQP)
-    await publishEmail(extractedInboundEmailData)
-
-    const jsonBody = { 
-      message: 'Email data extracted successfully and enqueued to RabbitMQ on CloudAMQP' 
+    const jsonBody = {
+      message: 'Email processed successfully',
+      data: processedInboundEmail
     }
     const responseInit: ResponseInit = {
       status: 200,
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Return the extracted data
+    // Return the processed data
     return NextResponse.json(jsonBody, responseInit)
   } catch (error) {
     const consoleMetadata: string = getConsoleMetadata(
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
       FILE_NAME, 
       'POST()'
     )
-    console.error(`${ consoleMetadata } Error in webhook handler: `, error)
+    console.error(`${ consoleMetadata } Error processing email data: `, error)
   
     const jsonBody = {
       error: 'Internal server error',

@@ -1,4 +1,4 @@
-// src/utils/crypto/index.ts
+// src/lib/node-crypto/index.ts
 // Externals
 import {
   subtle,

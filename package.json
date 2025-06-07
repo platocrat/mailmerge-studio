@@ -31,6 +31,8 @@
     "@cloudflare/workers-types": "^4.20250605.0",
     "@hcaptcha/react-hcaptcha": "^1.12.0",
     "@tailwindcss/postcss": "^4.1.8",
+    "@types/amqplib": "^0.10.7",
+    "amqplib": "^0.10.8",
     "chart.js": "^4.4.9",
     "d3": "^7.9.0",
     "firebase": "^11.9.0",

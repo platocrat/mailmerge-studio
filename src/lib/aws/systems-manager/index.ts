@@ -1,3 +1,4 @@
+// src/lib/aws/systems-manager/index.ts
 // Externals
 import { 
   SSMClient,
@@ -30,6 +31,7 @@ export const ssmClient = new SSMClient({
   region: REGION,
   credentials: CREDENTIALS,
 })
+
 
 /**
  * @dev Fetches the requested parameter from AWS Parameter Store.
