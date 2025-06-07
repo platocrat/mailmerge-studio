@@ -24,7 +24,7 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [11. Running example scripts](#11-running-example-scripts)
 - [12. Creating `iv` and `key` for `ClientCrypto` functions](#12-creating-iv-and-key-for-clientcrypto-functions) 
 - [13. Koyeb](#13-koyeb)
-   - [13.1.](#131-using-the-koyeb-cli)
+   - [13.1. Using the Koyeb CLI](#131-using-the-koyeb-cli)
 
 ## 2. Originated from ChatGPT prompt
 
