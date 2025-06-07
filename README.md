@@ -23,7 +23,8 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [10. Technologies](#10-technologies)
 - [11. Running example scripts](#11-running-example-scripts)
 - [12. Creating `iv` and `key` for `ClientCrypto` functions](#12-creating-iv-and-key-for-clientcrypto-functions) 
-- [13. License](#13-license)
+- [13. Koyeb](#13-koyeb)
+   - [13.1.](#131-using-the-koyeb-cli)
 
 ## 2. Originated from ChatGPT prompt
 
@@ -279,7 +280,50 @@ You will need an `iv` and `key` to encrypt the `str` argument:
 4. For cloud-development, make sure to add the `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_KEY` and `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_IV` variables as GitHub Secrets to the GitHub repository or as new parameters in the AWS Parameter Store.
 
 
-## 13. License
+## 13. Koyeb
+
+What Koyeb is (from their [company website](https://koyeb.com))...
+
+> KOYEB IS A DEVELOPER-FRIENDLY SERVERLESS PLATFORM TO DEPLOY APPS GLOBALLY. NO-OPS, SERVERS, OR INFRASTRUCTURE MANAGEMENT.
+
+It is a web services provider like [Fly.io](https://fly.io), but we're only using it to host our service worker.
+
+### 13.1. Using the Koyeb CLI
+
+**1. Create an application**
+
+   To create a new application on the CLI, run the following command:
+
+   ```bash
+   koyeb app create application-name
+   ```
+
+**2. Deploy a service**
+
+   To deploy a service on the CLI, run the following command:
+
+   ```bash
+   koyeb deploy application-name/service-name \
+   --type worker \
+   --instance-type free \
+   --regions fra \
+   ```
+
+   and add any other other flags that you may need.
+   
+   For example, I am using a Dockerfile to build my service and using CloudAQMP in it. Thus, I added the `--archive-builder`, `--archive-docker-dockerfile`, and `env` flags to build the application from a local Dockerfile:
+
+   ```bash
+   koyeb deploy . postmark-email-worker/worker \
+      --type worker \
+      --instance-type free \
+      --regions fra \
+      --env CLOUDAMQP_URL=$CLOUDAMQP_URL \
+      --archive-builder docker \
+      --archive-docker-dockerfile Dockerfile
+   ```
+
+## License
 
 MIT
 
