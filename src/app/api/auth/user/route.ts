@@ -4,16 +4,15 @@ import { cookies } from 'next/headers'
 import { decode, verify } from 'jsonwebtoken'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import {
-  hasJWT,
-  JwtType,
-  fetchAwsParameter,
-  getDecryptedItems,
-  AWS_PARAMETER_NAMES,
-  getConsoleMetadata,
-  COOKIE_NAMES,
+import { 
+  COOKIE_NAMES, 
+  getDecryptedItems, 
+  getConsoleMetadata, 
+  hasJWT, 
+  jsonResponse, 
+  JwtType 
 } from '@/utils'
-import { jsonResponse } from '@/utils/api/utils'
+import { AWS_PARAMETER_NAMES, fetchAwsParameter } from '@/lib'
 import { CookieType, EncryptedCookieField } from '@/types'
 
 

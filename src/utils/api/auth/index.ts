@@ -9,15 +9,17 @@ import {
   UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb'
 // Locals
-import {
-  ddbDocClient,
-  fetchAwsParameter,
-  AWS_PARAMETER_NAMES,
-  DYNAMODB_TABLE_NAMES,
+import { 
+  AWS_PARAMETER_NAMES, 
+  ddbDocClient, 
+  DYNAMODB_TABLE_NAMES, 
+  fetchAwsParameter, 
   ServerCrypto,
-  MAX_AGE,
-  getConsoleMetadata,
-  COOKIE_NAMES,
+} from '@/lib'
+import { 
+  COOKIE_NAMES, 
+  getConsoleMetadata, 
+  MAX_AGE, 
 } from '@/utils'
 import { 
   ACCOUNT__DYNAMODB, 

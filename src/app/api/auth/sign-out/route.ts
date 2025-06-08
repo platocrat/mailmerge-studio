@@ -8,13 +8,9 @@ import {
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { 
-  COOKIE_NAMES, 
-  ddbDocClient, 
-  DYNAMODB_TABLE_NAMES,
-  getConsoleMetadata,
-} from '@/utils'
 import { ACCOUNT__DYNAMODB } from '@/types'
+import { getConsoleMetadata, COOKIE_NAMES } from '@/utils'
+import { DYNAMODB_TABLE_NAMES, ddbDocClient } from '@/lib'
 
 const LOG_TYPE = 'API_CALL'
 const FILE_PATH = 'src/app/api/auth/sign-out/route.ts'

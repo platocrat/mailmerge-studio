@@ -2,12 +2,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { QueryCommand, QueryCommandInput } from '@aws-sdk/lib-dynamodb'
 // Locals
-import {
-  ddbDocClient,
-  getConsoleMetadata,
-  DYNAMODB_TABLE_NAMES,
-} from '@/utils'
+import { getConsoleMetadata } from '@/utils'
 import { ACCOUNT__DYNAMODB } from '@/types'
+import { DYNAMODB_TABLE_NAMES, ddbDocClient } from '@/lib'
 
 
 const LOG_TYPE = `API_CALL`

@@ -10,16 +10,18 @@ import {
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import {
-  ddbDocClient,
-  fetchAwsParameter,
-  getEncryptedItems,
-  AWS_PARAMETER_NAMES,
-  DYNAMODB_TABLE_NAMES,
-  setJwtCookieAndGetCookieValue,
-  getConsoleMetadata,
-} from '@/utils'
 import { ACCOUNT__DYNAMODB } from '@/types'
+import { 
+  AWS_PARAMETER_NAMES, 
+  ddbDocClient, 
+  DYNAMODB_TABLE_NAMES, 
+  fetchAwsParameter,
+} from '@/lib'
+import { 
+  getConsoleMetadata, 
+  getEncryptedItems, 
+  setJwtCookieAndGetCookieValue 
+} from '@/utils'
 
 const LOG_TYPE = 'API_CALL'
 const FILE_PATH = 'src/app/api/auth/sign-up/route.ts'

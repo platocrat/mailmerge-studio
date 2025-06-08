@@ -1,17 +1,12 @@
 // src/app/api/auth/sign-in/route.ts
 // Externals
 import { cookies } from 'next/headers'
+import { QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { QueryCommand } from '@aws-sdk/lib-dynamodb'
-import { 
-  ddbDocClient, 
-  DYNAMODB_TABLE_NAMES, 
-  getConsoleMetadata, 
-  ServerCrypto 
-} from '@/utils'
 import { ACCOUNT__DYNAMODB } from '@/types'
-import { verifiedEmailAndPassword } from '@/utils/api/auth'
+import { getConsoleMetadata, verifiedEmailAndPassword } from '@/utils'
+import { ddbDocClient, DYNAMODB_TABLE_NAMES, ServerCrypto } from '@/lib'
 
 
 const LOG_TYPE = 'SERVER'

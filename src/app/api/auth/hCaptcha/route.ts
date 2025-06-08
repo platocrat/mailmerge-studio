@@ -1,7 +1,8 @@
 // Externals
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
-import { AWS_PARAMETER_NAMES, fetchAwsParameter, getConsoleMetadata } from '@/utils'
+import { getConsoleMetadata } from '@/utils'
+import { AWS_PARAMETER_NAMES, fetchAwsParameter } from '@/lib'
 
 const LOG_TYPE = 'API_CALL'
 const FILE_PATH = 'src/app/api/auth/hCaptcha/route.ts'
