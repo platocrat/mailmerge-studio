@@ -21,14 +21,29 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [8. Email Commands](#8-email-commands)
 - [9. Accessibility](#9-accessibility)
 - [10. Technologies](#10-technologies)
-- [11. Running example scripts](#11-running-example-scripts)
-- [12. Creating `iv` and `key` for `ClientCrypto` functions](#12-creating-iv-and-key-for-clientcrypto-functions) 
-- [13. Koyeb](#13-koyeb)
-   - [13.1. Using the Koyeb CLI](#131-using-the-koyeb-cli)
+- [11. Architecture Overview](#11-architecture-overview)
+- [12. Running example scripts](#12-running-example-scripts)
+- [13. Creating `iv` and `key` for `ClientCrypto` functions](#13-creating-iv-and-key-for-clientcrypto-functions) 
+- [14. Koyeb](#13-koyeb)
+   - [14.1. Using the Koyeb CLI](#141-using-the-koyeb-cli)
+- [15. lambda-email-processor](#15-lambda-email-processor)
+   - [15.1. High-Level Flow](#151-high-level-flow)
+   - [15.2. Repo Structure](#152-repo-structure)
+   - [15.3 Environment Variables](#153-environment-variables)
+   - [15.4 Build & Deploy (zip-based)](#154-build--deploy-zip-based)
+   - [15.5. Smoke Tests](#155-smoke-tests)
+      - [15.5.1 Local](#1551-local)
+      - [15.5.2 Lambda Console](#1552-lambda-console)
+   - [15.6. Key Points & Gotchas](#156-key-points--gotchas)
+   - [15.7. Todo / Ideas](#157-todo--ideas)
 
-## 2. Originated from ChatGPT prompt
+## 2. Originated from ChatGPT prompt and Bolt.new
 
-A link to the discussion of the ChatGPT prompt can be found below:
+Much of the MailMerge Studio project was conceived from a chat with the [Bolt.new](https://bolt.new) tool which generated a base of the project from scratch.
+
+Many changes have been made to that base project that Bolt generated, but only after many consultations with [ChatGPT](https://chatgpt.com) and [Cursor](https://cursor.com)
+
+A link to the discussion of the ChatGPT prompt where much of the current state of project originated from can be found below:
 
 - <https://chatgpt.com/share/68322dc2-40dc-8011-9b17-72fdb33da240>
 
@@ -129,6 +144,7 @@ No login is required; all demo data auto‑purges after 24 s.
    - Next.js (API routes) + Prisma + SQLite (demo)
    - D3 & `@vercel/og` for server‑rendered chart images (no client JS needed).
    - Cloudflare R2 for attachment storage; Amazon SES is *not* required thanks to Postmark outbound API.
+   - The [lambda-email-processor](#14-lambda-email-processor) Lambda worker is responsible for ingesting inbound messages, running data extraction and analysis, and storing outputs in DynamoDB and Cloudflare R2.
 
 4. **Rate & size limits** (≤ 10 MB per email; attachments filtered as per Postmark's forbidden types list). (Source: [Postmark Developer User-Guide: Sending an email with API](https://postmarkapp.com/developer/user-guide/send-email-with-api))
 
@@ -148,6 +164,7 @@ No login is required; all demo data auto‑purges after 24 s.
 ## 3. Features
 
 - **Email-Driven Data Pipeline**: Forward structured or free-form emails to generate instant dashboards
+- **Automated, Serverless Processing**: All emails and attachments are parsed and analyzed automatically by our [lambda-email-processor](#14-lambda-email-processor) worker (AWS Lambda, SQS, OpenAI, R2, DynamoDB)
 - **Interactive Visualizations**: Beautiful, accessible charts and metrics from your data
 - **Attachment Processing**: Support for CSV, JSON, and image attachments
 - **Command-Based Analysis**: Use email subject line commands like `#sum` or `#filter`
@@ -219,16 +236,37 @@ Example: `Weekly Sales Report #csv #sum revenue by month`
 
 ## 10. Technologies
 
-- React 18
-- Vite
-- TypeScript
-- Tailwind CSS
-- AWS DynamoDB
-- Cloudflare R2
-- Chart.js
-- Lucide Icons
+- **Frontend:** Next.js, React 18, Vite, Tailwind CSS, Lucide Icons
+- **Backend/Data Pipeline:**  
+  - [lambda-email-processor](#14-lambda-email-processor) (AWS Lambda, Node.js 22.x)  
+  - AWS SQS, DynamoDB  
+  - Cloudflare R2 (attachments)  
+  - OpenAI (data analysis, summary, chart gen)
 
-## 11. Running example scripts
+## 11. Architecture Overview
+
+```
+[User Email]
+     │
+     ▼
+[Postmark Inbound Webhook (Next.js)]
+     │
+     ▼
+[SQS Queue: mailmerge-studio-emails]
+     │
+     ▼
+[lambda-email-processor (AWS Lambda)]
+     │
+ ┌───────┬──────────┬─────────────┐
+ │       │          │             │
+ ▼       ▼          ▼             ▼
+OpenAI  DynamoDB   R2        [Outgoing Dashboard Email]
+                   (attachments, charts, summary.txt)
+```
+
+*See [lambda-email-processor](#15-lambda-email-processor) for details on the automated backend pipeline.*
+
+## 12. Running example scripts
 
 To run the example scripts on the command line, run the following command:
 
@@ -236,7 +274,7 @@ To run the example scripts on the command line, run the following command:
 npx ts-node -O '{"module":"commonjs"}' scripts/filename.ts
 ```
 
-## 12. Creating `iv` and `key` for `ClientCrypto` functions
+## 13. Creating `iv` and `key` for `ClientCrypto` functions
 
 The `encryptCompressEncode()` and `decodeDecompressDecrypt()` functions of the `ClientCrypto` (i.e. Client-Side Crypto) class are used to encrypt a shareable ID string which is used in shareable links. To encrypt strings on the client, create an initialization vector, i.e. `iv`, and an asymmetric encryption `key`.
 
@@ -280,7 +318,7 @@ You will need an `iv` and `key` to encrypt the `str` argument:
 4. For cloud-development, make sure to add the `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_KEY` and `NEXT_PUBLIC_SHARE_RESULTS_ENCRYPTION_IV` variables as GitHub Secrets to the GitHub repository or as new parameters in the AWS Parameter Store.
 
 
-## 13. Koyeb
+## 14. Koyeb
 
 What Koyeb is (from their [company website](https://koyeb.com))...
 
@@ -288,7 +326,7 @@ What Koyeb is (from their [company website](https://koyeb.com))...
 
 It is a web services provider like [Fly.io](https://fly.io), but we're only using it to host our service worker.
 
-### 13.1. Using the Koyeb CLI
+### 14.1. Using the Koyeb CLI
 
 **1. Create an application**
 
@@ -346,8 +384,6 @@ It is a web services provider like [Fly.io](https://fly.io), but we're only usin
    koyeb service redeploy worker --git-ref v1.2.3
    ```
 
-
-
 **5. Environment changes without downtime**
 
    ```bash
@@ -355,6 +391,136 @@ It is a web services provider like [Fly.io](https://fly.io), but we're only usin
    ```
 
    Koyeb rolls a new deployment, waits for health checks to pass, then swaps traffic.
+
+## 15. lambda-email-processor
+
+MailMerge Studio’s backend email-to-dashboard pipeline is powered by a robust serverless worker: **`[lambda-email-processor](https://github.com/platocrat/lambda-email-processor)`**.
+
+This Lambda function **ingests Postmark inbound-email events, processes them with OpenAI, stores artefacts in Cloudflare R2, and persists metadata to DynamoDB**. It is triggered automatically by messages arriving on an Amazon SQS queue (`mailmerge‑studio‑emails`) and runs inside AWS Lambda’s Node 22.x runtime on the free tier.
+
+### 15.1. High-Level Flow
+
+```
+Postmark Webhook (Next.js) ─► SQS Standard queue
+│
+▼
+AWS Lambda (emailProcessor)
+│
+┌─────────────────────────┴──────────────────────────┐
+│                                                    │
+▸ OpenAI chat/completions                        Cloudflare R2
+▸ Generate summary & charts                ▸ Store original attachments
+▸ Store summary.txt + charts
+│
+▼
+DynamoDB Projects table
+```
+
+### 15.2. Repo Structure
+
+```
+.
+├─ index.js                    # Lambda handler (CommonJS)
+├─ node_modules/               # Node package dependencies
+├─ lib/
+│  ├─ constants.js             # NON‑secret config
+│  └─ dynamodb.js              # DynamoDBDocumentClient factory
+├─ services/
+│  ├─ dataProcessing.js        # High-level orchestration
+│  ├─ dynamo.js                # DynamoDB helpers
+│  ├─ openai.js                # OpenAI wrapper
+│  └─ r2.js                    # Cloudflare R2 wrapper
+├─ utils.js                    # Logging helpers, misc
+├─ sample-inbound-email.json   # Example event
+├─ package.json
+└─ package-lock.json
+```
+
+### 15.3. Environment Variables
+
+Environment variables are set in **Lambda → Configuration → Environment Variables**:
+
+| Variable                                    | Purpose                                     |
+| ------------------------------------------- | ------------------------------------------- |
+| `OPENAI_API_KEY`                            | Secret key for OpenAI API                   |
+| `R2_ACCOUNT_ID`                             | Cloudflare R2 account ID                    |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | R2 API credentials                          |
+| `R2_BUCKET_NAME`                            | Name of the R2 bucket                       |
+| `AWS_REGION`                                | Auto-injected by Lambda (e.g., `us-east-1`) |
+
+*(The Lambda execution role supplies AWS SDK credentials for DynamoDB & SQS.)*
+
+### 15.4. Build & Deploy (zip-based)
+
+```bash
+# 1. Install dependencies
+npm ci
+
+# 2. Bundle code + node_modules
+zip -r lambda-email-processor.zip \
+    index.js node_modules lib/ services/ utils.js \
+    package.json package-lock.json
+
+# 3. Upload to Lambda
+aws lambda update-function-code \
+  --function-name emailProcessor \
+  --zip-file fileb://lambda-email-processor.zip
+```
+
+You may also use the AWS console UI for deployment.
+
+### 15.5. Smoke Tests
+
+#### 15.5.1. Local
+
+```bash
+node -e "import('./index.js').then(m =>
+  m.handler({ Records:[{ messageId:'1', body: JSON.stringify({subject:'hi', textBody:'hello'}) }] })
+)"
+```
+
+#### 15.5.2 Lambda Console
+
+* **Lambda Console** → **Test** → select SQS event template → paste:
+
+  ```json
+  {
+    "Records": [{
+      "messageId": "1",
+      "body": "{\"subject\":\"hello\",\"textBody\":\"hi\"}"
+    }]
+  }
+  ```
+
+* Expect a green success banner and no `batchItemFailures`.
+
+* Send a real email to your Postmark inbound address.
+
+* In SQS Console, message count rises and returns to 0 when processed.
+
+* CloudWatch Logs: Look for `emailProcessor` stream entries confirming a run.
+
+### 15.6. Key Points & Gotchas
+
+1. **CommonJS vs ESM:** Lambda defaults to CommonJS; either stick with `require()`/`module.exports` or add `"type":"module"` in `package.json`.
+2. **Dependencies:** Always zip and upload `node_modules` with your code.
+3. **Partial-Batch Response:** `index.js` returns `{ batchItemFailures: [...] }` so one bad email doesn’t poison the whole batch.
+4. **Dead-letter Queue:** Use an SQS DLQ (`mailmerge‑studio‑emails‑dlq`) and set MaxReceiveCount = 5 on the main queue.
+5. **Free-Tier Safe:**
+
+   * Lambda ≤ 1M invocations/month
+   * SQS ≤ 1M requests/month
+   * DynamoDB charges only on actual usage
+
+### 15.7. Todo / Ideas
+
+* **Unit tests** for [`services/openai.js`](./services/openai.js) and [`services/r2.js`](./services/r2.js)
+* **CloudFormation / SAM template** for provisioning infra in one command
+* **Chunked attachment upload** for files > 5 MB
+
+---
+
+**The lambda-email-processor is the heart of MailMerge Studio’s automation: scalable, event-driven, and extensible for future AI-powered data processing.**
 
 ## License
 
