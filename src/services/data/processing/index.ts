@@ -1,4 +1,4 @@
-// src/services/data/processing-service/index.ts
+// src/services/data/processing/index.ts
 // Externals
 import {
   QueryCommand,
@@ -16,17 +16,13 @@ import type {
   ExtractedInboundEmailData,
   EmailAttachment,
 } from '@/types'
-import { 
-  ddbDocClient,
-  DYNAMODB_TABLE_NAMES,
-} from '@/lib'
 import { getConsoleMetadata } from '@/utils'
 import { openaiService } from '@/services/open-ai'
 import { dynamoService, r2Service } from '@/services/data'
 
 
 const LOG_TYPE = 'API_CALL'
-const FILE_NAME = 'src/services/data/processing-service/index.ts'
+const FILE_NAME = 'src/services/data/processing/index.ts'
 
 /**
  * @dev Data processing service for handling email data
@@ -270,4 +266,4 @@ class DataProcessingService {
 
 
 export const dataProcessingService = new DataProcessingService()
-export default dataProcessingService 
+export default dataProcessingService

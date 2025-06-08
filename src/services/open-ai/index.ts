@@ -3,7 +3,7 @@
 import OpenAI from 'openai'
 // Locals
 import { MODEL } from '@/lib'
-import { getConsoleMetadata, readableStreamToBuffer } from '@/utils'
+import { getConsoleMetadata } from '@/utils'
 import { DATA_ANALYSIS_RESULT__OPENAI, EmailAttachment } from '@/types'
 
 

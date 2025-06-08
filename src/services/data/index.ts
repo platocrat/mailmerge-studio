@@ -1,2 +1,2 @@
 export * from './cloudflare-r2'
-export * from './dynamodb-service'
+export * from './dynamodb'

@@ -1,4 +1,0 @@
-name: postmark-email-worker
-routes: []
-instances:
-  type: free   # <— keeps it on the free allowance

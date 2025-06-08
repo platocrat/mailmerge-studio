@@ -20,18 +20,18 @@ import {
   UpdateCommandInput,
 } from '@aws-sdk/lib-dynamodb'
 // Locals
-import { 
+import {
   ddbDocClient,
   DYNAMODB_TABLE_NAMES,
-  getConsoleMetadata,
-} from '@/utils'
+} from '@/lib'
 import type {
   PROJECT__DYNAMODB,
   ProcessedInboundEmail,
 } from '@/types'
+import { getConsoleMetadata } from '@/utils'
 
 
-const FILE_PATH = 'src/services/data/dynamodb-service/index.ts'
+const FILE_PATH = 'src/services/data/dynamodb/index.ts'
 const LOG_TYPE = 'SERVER'
 
 

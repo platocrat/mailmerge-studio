@@ -3,9 +3,10 @@
 import { randomBytes } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 // Locals
+import { DYNAMODB_TABLE_NAMES } from '@/lib'
 import { PROJECT__DYNAMODB } from '@/types'
 import { dynamoService } from '@/services/data'
-import { DYNAMODB_TABLE_NAMES, getConsoleMetadata } from '@/utils'
+import { getConsoleMetadata } from '@/utils'
 
 
 const FILE_PATH = `src/app/api/project/route.ts`
