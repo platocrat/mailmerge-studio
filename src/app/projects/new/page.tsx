@@ -7,7 +7,7 @@ import { Mail, ArrowLeft } from 'lucide-react'
 import React, { ChangeEvent, FormEvent, useContext, useState } from 'react'
 // Locals
 import { PROJECT__DYNAMODB } from '@/types'
-import { getConsoleMetadata, RANDOM_POSTMARK_INBOUND_HASH } from '@/utils'
+import { getConsoleMetadata, RANDOM_POSTMARK_INBOUND_HASH, fetchJson } from '@/utils'
 import { SessionContextType } from '@/contexts/types'
 import { SessionContext } from '@/contexts/SessionContext'
 
@@ -109,24 +109,15 @@ const _ = () => {
     try {
       // Send to server API route
       const API_URL = `/api/project`
-      const response = await fetch(API_URL, {
+      const json = await fetchJson<{ project: PROJECT__DYNAMODB }>(API_URL, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           ...formData,
           accountEmail: email,
         }),
       })
 
-      if (response.status !== 200) {
-        throw new Error('Failed to create project')
-      }
-
-      const json = await response.json()      
-      const project: PROJECT__DYNAMODB = json.project as PROJECT__DYNAMODB
-      const projectId = project.id
+      const projectId = json.project.id
       return projectId
     } catch (error) {
       console.error('Error creating project:', error)
