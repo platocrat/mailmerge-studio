@@ -2,7 +2,7 @@
 // Externals
 import OpenAI from 'openai'
 // Locals
-import { MODEL } from '@/lib'
+import { MODEL, traverse } from '@/lib'
 import { getConsoleMetadata } from '@/utils'
 import { DATA_ANALYSIS_RESULT__OPENAI, EmailAttachment } from '@/types'
 
@@ -177,34 +177,7 @@ class OpenAIService {
 
       // 5. Extract text and image file IDs from the response
       const generatedFileIds: string[] = []
-
-      function traverse(obj: any) {
-        if (!obj) return
-        if (Array.isArray(obj)) {
-          obj.forEach(traverse)
-          return
-        }
-        if (typeof obj !== 'object') return
-
-        if (
-          obj.type === 'code_interpreter_call' &&
-          Array.isArray(obj.results)
-        ) {
-          for (const res of obj.results) {
-            if (res.type === 'files' && Array.isArray(res.files)) {
-              for (const f of res.files) {
-                if (f.file_id) generatedFileIds.push(f.file_id)
-              }
-            }
-          }
-        }
-
-        for (const value of Object.values(obj)) {
-          traverse(value)
-        }
-      }
-
-      traverse(response.output)
+      traverse(response.output, generatedFileIds)
 
       const textContent = response.output_text || ''
 
