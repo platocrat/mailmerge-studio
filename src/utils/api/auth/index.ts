@@ -239,7 +239,7 @@ export async function verifiedEmailAndPassword(
       LOG_TYPE,
       false,
       FILE_PATH,
-      'verifyEmailAndPassword()'
+      'verifiedEmailAndPassword()'
     )
     const errorMessage = `Error verifying email and password: `
     console.error(`${ consoleMetadata } ${ errorMessage }`, error)

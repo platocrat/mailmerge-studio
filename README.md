@@ -207,6 +207,7 @@ npm run dev
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm test` - Run Jest test suites
 
 ## 7. Testing the Application
 
@@ -214,6 +215,7 @@ npm run dev
 2. Navigate to the Webhook Simulator to test email processing
 3. Try different data formats and commands
 4. View generated dashboards and visualizations
+5. After running `npm install`, execute `npm test` to run Jest suites
 
 ## 8. Email Commands
 
