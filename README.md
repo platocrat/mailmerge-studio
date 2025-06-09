@@ -24,7 +24,7 @@ Transform your emails into beautiful, interactive dashboards — no coding requi
 - [11. Architecture Overview](#11-architecture-overview)
 - [12. Running example scripts](#12-running-example-scripts)
 - [13. Creating `iv` and `key` for `ClientCrypto` functions](#13-creating-iv-and-key-for-clientcrypto-functions) 
-- [14. Koyeb](#13-koyeb)
+- [14. Koyeb](#14-koyeb)
    - [14.1. Using the Koyeb CLI](#141-using-the-koyeb-cli)
 - [15. lambda-email-processor](#15-lambda-email-processor)
    - [15.1. High-Level Flow](#151-high-level-flow)
