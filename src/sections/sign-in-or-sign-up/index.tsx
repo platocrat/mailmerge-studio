@@ -12,7 +12,7 @@ import { usePathname, useRouter } from 'next/navigation'
 // Locals
 import Form from './form'
 import Title from './title'
-import Description from './descripton'
+import Description from './description'
 import SignInSignUpCard from '@/components/Cards/SignInSignUp'
 import { SessionContextType } from '@/contexts/types'
 import { SessionContext } from '@/contexts/SessionContext'
