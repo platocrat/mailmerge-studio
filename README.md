@@ -123,7 +123,7 @@ The project therefore scores highly for **"Utilization of Postmark features."**
 | **Low‑vision user** | Same as above; open in high‑contrast mode to verify accessibility.                                                                                                                                |
 | **Developer**       | cURL simulation:<br>`curl -X POST "https://demo.mailmerge.studio/webhooks/inbound" -H "Content-Type: application/json" -d '@sample-inbound.json'` (sample file attached in repo).                 |
 
-No login is required; all demo data auto‑purges after 24 s.
+No login is required; all demo data auto‑purges after 24 h.
 
 ---
 
