@@ -7,6 +7,7 @@ import { Mail, Plus, BarChart2, Users } from 'lucide-react'
 import ProjectCard from '../components/Cards/Project'
 import type { PROJECT__DYNAMODB } from '@/types'
 import { getConsoleMetadata } from '@/utils/misc'
+import { fetchJson } from '@/utils'
 import ProgressBarLink from '@/components/Progress/ProgressBarLink'
 import { SessionContext } from '@/contexts/SessionContext'
 import { SessionContextType } from '@/contexts/types'
@@ -59,21 +60,12 @@ export default function _() {
     const API_URL = `/api/projects`
 
     try {
-      const response = await fetch(API_URL, {
+      const json = await fetchJson<{ projects?: PROJECT__DYNAMODB[] }>(API_URL, {
         method: 'GET',
-        cache: 'force-cache',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       })
 
-      if (response.status === 200) {
-        const json = await response.json()
-        const userProjects = json.projects || []
-        setProjects([...demoProjects, ...userProjects])
-      } else {
-        setProjects([...demoProjects])
-      }
+      const userProjects = json.projects || []
+      setProjects([...demoProjects, ...userProjects])
     } catch (error) {
       const consoleMetadata = getConsoleMetadata(
         LOG_TYPE,

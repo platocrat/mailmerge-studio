@@ -16,7 +16,7 @@ import Description from './description'
 import SignInSignUpCard from '@/components/Cards/SignInSignUp'
 import { SessionContextType } from '@/contexts/types'
 import { SessionContext } from '@/contexts/SessionContext'
-import { deleteAllCookies } from '@/utils'
+import { deleteAllCookies, fetchJson } from '@/utils'
 
 
 type SignInOrSignUpProps = {
@@ -86,24 +86,18 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
     deleteAllCookies()
 
     try {
-      const response = await fetch('/api/auth/sign-in', {
+      const json = await fetchJson('/api/auth/sign-in', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email, 
-          // username, 
+        body: JSON.stringify({
+          email,
+          // username,
           password,
         }),
       })
 
-      const json = await response.json()
+      const { message, isGlobalAdmin, isParticipant } = json as any
 
-      if (response.status === 200) {
-        const { message, isGlobalAdmin, isParticipant } = json
-
-        switch (message) {
+      switch (message) {
           // case 'Verified email, username, and password':
           case 'Verified email and password':
             setIsEmailIncorrect(false)
@@ -145,19 +139,11 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
             setIsPasswordIncorrect(false)
             break
         }
-      } else {
+      } catch (error: any) {
         setIsWaitingForResponse(false)
         setIsEmailIncorrect(false)
         // setIsUsernameIncorrect(false)
         setIsPasswordIncorrect(false)
-
-        console.error(`Error verifying log in credentials: `, json.error)
-      }
-    } catch (error: any) {
-      setIsWaitingForResponse(false)
-      setIsEmailIncorrect(false)
-      // setIsUsernameIncorrect(false)
-      setIsPasswordIncorrect(false)
 
       /**
        * @todo Handle error UI here
@@ -178,40 +164,29 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
     deleteAllCookies()
 
     try {
-      const response = await fetch('/api/auth/sign-up', {
+      const json = await fetchJson('/api/auth/sign-up', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email, 
+        body: JSON.stringify({
+          email,
           // username,
           password,
         }),
       })
 
-      const json = await response.json()
+      const { message } = json as any
 
-      if (response.status === 200) {
-        const { message } = json
+      switch (message) {
+        // case 'Username exists':
+        //   setIsUsernameTaken(true)
+        //   setIsWaitingForResponse(false)
+        //   break
 
+        case 'User has successfully signed up':
+          // Authenticate user
+          setIsAuthenticated(true)
 
-        switch (message) {
-          // case 'Username exists':
-          //   setIsUsernameTaken(true)
-          //   setIsWaitingForResponse(false)
-          //   break
-
-          case 'User has successfully signed up':
-            // Authenticate user
-            setIsAuthenticated(true)
-
-            router.push('/')
-            break
-        }
-      } else {
-        setIsWaitingForResponse(false)
-        throw new Error(`Error signing up: `, json.error)
+          router.push('/')
+          break
       }
     } catch (error: any) {
       setIsWaitingForResponse(false)
@@ -230,15 +205,13 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
 
     try {
       const API_URL = `/api/auth/email?email=${email}`
-      const response = await fetch(API_URL, {
+      const json = await fetchJson(API_URL, {
         method: 'GET',
         cache: 'force-cache',
       })
 
-      const json = await response.json()
-
-      if (response.status === 401) {
-        const error = json.error
+      if ((json as any).error) {
+        const error = (json as any).error
 
         switch (error) {
           case 'ExpiredTokenException: AWS access keys have expired.':
@@ -249,31 +222,25 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
             setEmailNotFound(true)
             setIsWaitingForResponse(false)
             break
+          default:
+            setIsWaitingForResponse(false)
+            throw new Error(error)
         }
       } else {
-        if (response.status === 200) { // If email exists
-          const message = json.message
+        const message = (json as any).message
 
-          switch (message) {
-            case 'Email with password exists':
-              setIsWaitingForResponse(false)
-              setIsFirstStep(false)
-              setIsSignUp(false)
-              break
+        switch (message) {
+          case 'Email with password exists':
+            setIsWaitingForResponse(false)
+            setIsFirstStep(false)
+            setIsSignUp(false)
+            break
 
-            case 'Email with password does not exist':
-              setIsWaitingForResponse(false)
-              setIsFirstStep(false)
-              setIsSignUp(true)
-              break
-          }
-        } else {
-          setIsWaitingForResponse(false)
-          const error = json.error
-          /**
-           * @todo Handle error UI here
-           */
-          throw new Error(error)
+          case 'Email with password does not exist':
+            setIsWaitingForResponse(false)
+            setIsFirstStep(false)
+            setIsSignUp(true)
+            break
         }
       }
     } catch (error: any) {
