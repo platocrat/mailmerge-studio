@@ -282,17 +282,22 @@ The `encryptCompressEncode()` and `decodeDecompressDecrypt()` functions of the `
 
 You will need an `iv` and `key` to encrypt the `str` argument:
 
-1. Note that we we are generating a 128-bit key length because it results in a shorter shareable ID string that we place in a shareable URL. (You can generate a key with a 256-bit key length by using a 32-byte initialization vector, i.e. `iv`.):
+1. Note that we are generating a 128-bit key length because it results in a shorter shareable ID string that we place in a shareable URL. (You can generate a key with a 256-bit key length by using a 32-byte initialization vector, i.e. `iv`.):
 
    ```ts
-   // 1. Set the size of the key to 16 bytes
+   // 1. Set the size of the IV to 16 bytes
    const bytesSize = new Uint8Array(16)
    
    // 2. Create an initialization vector of 128 bit-length
-   const iv = crypto.getRandomValues(bytesSize).toString()
+   if (crypto.webcrypto?.getRandomValues) {
+     crypto.webcrypto.getRandomValues(bytesSize)
+   } else {
+     crypto.randomFillSync(bytesSize)
+   }
+   const iv = bytesSize.toString()
    console.log(`iv:`, iv)
 
-   // 3. Generate a new asymmetric key
+   // 3. Generate a new symmetric key
    const key = await crypto.subtle.generateKey(
    {
          name: 'AES-GCM',
