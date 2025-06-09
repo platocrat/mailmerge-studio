@@ -7,8 +7,12 @@ describe('ClientCrypto Initialization Vector and Key Generation', () => {
     const bytesSize = new Uint8Array(16)
 
     // 2. Create an initialization vector of 128 bit-length
-    const iv = crypto.getRandomValues(bytesSize)
-    console.log(`iv:`, iv.toString())
+    if (crypto.webcrypto?.getRandomValues) {
+      crypto.webcrypto.getRandomValues(bytesSize)
+    } else {
+      crypto.randomFillSync(bytesSize)
+    }
+    const iv = bytesSize
 
     // 3. Generate a new symmetric key (AES-GCM, 128 bits)
     const key = await crypto.subtle.generateKey(
@@ -23,11 +27,12 @@ describe('ClientCrypto Initialization Vector and Key Generation', () => {
     // 4. Export the `CryptoKey`
     const jwk = await crypto.subtle.exportKey('jwk', key)
     const serializedJwk = JSON.stringify(jwk)
-    console.log(`serializedJwk:`, serializedJwk)
 
     // Optionally, add assertions
+    expect(iv.length).toBe(16)
+    expect((key as CryptoKey).algorithm.name).toBe('AES-GCM')
     expect(jwk.kty).toBe('oct')
     expect(jwk.k).toBeDefined()
     expect(jwk.alg).toBe('A128GCM')
   })
-}) 
+})
