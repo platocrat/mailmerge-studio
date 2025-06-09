@@ -62,7 +62,6 @@ export default function _() {
     try {
       const json = await fetchJson<{ projects?: PROJECT__DYNAMODB[] }>(API_URL, {
         method: 'GET',
-        cache: 'force-cache',
       })
 
       const userProjects = json.projects || []

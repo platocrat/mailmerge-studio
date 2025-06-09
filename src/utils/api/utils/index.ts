@@ -46,4 +46,4 @@ export function jsonResponse(
   }
 
   return NextResponse.json(data, { status, headers: JSON_HEADER })
-}\nexport * from './fetchJson';
+}
