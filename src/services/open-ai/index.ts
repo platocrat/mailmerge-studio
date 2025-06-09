@@ -133,17 +133,38 @@ class OpenAIService {
         }
       ]
 
-      // 3. Send the request to the Responses API
+      // 3. Create a container so we know its ID
+      const container = await client.containers.create({
+        name: 'analysis-container',
+        expires_after: {
+          anchor: 'last_active_at',
+          minutes: 10
+        },
+        file_ids: uploadedFiles,
+      })
+
+      const containerId = container.id
+
+      const consoleMetadataContainer: string = getConsoleMetadata(
+        LOG_TYPE,
+        true,
+        FILE_NAME,
+        'analyzeData()'
+      )
+
+      console.log(
+        `${ consoleMetadataContainer } container: `,
+        container
+      )
+
+      // 4. Send the request to the Responses API using the container ID
       const response = await client.responses.create({
         model: MODEL, // e.g. "gpt-4o", "gpt-4-1106-preview", etc.
         input: inputArray,
         tools: [
           {
             type: 'code_interpreter',
-            container: {
-              type: 'auto',
-              file_ids: uploadedFiles
-            }
+            container: containerId
           }
         ],
         temperature: 1,
@@ -154,73 +175,57 @@ class OpenAIService {
 
       console.log(`${consoleMetadata} response: `, response)
 
-      // 4. Extract results: text and any image files from the outputs
-      // const result: DATA_ANALYSIS_RESULT__OPENAI = {
-      //   textContent: '',
-      //   imageFiles: []
-      // }
+      // 5. Extract text and image file IDs from the response
+      const generatedFileIds: string[] = []
 
-      type ExtractionResult = {
-        textContent: string
-        imageFiles: string[]
-      }
-
-      /**
-       * @dev Recursively extracts text content and images from any OpenAI 
-       * response structure.
-       */
-      function extractOpenAIResponse(
-        obj: any,
-        acc: ExtractionResult = { textContent: '', imageFiles: [] }
-      ): ExtractionResult {
+      function traverse(obj: any) {
+        if (!obj) return
         if (Array.isArray(obj)) {
-          for (const item of obj) {
-            extractOpenAIResponse(item, acc)
-          }
-        } else if (obj && typeof obj === 'object') {
-          // Extract text from message/content types
-          if (
-            (obj.type === 'text' || obj.type === 'output_text') &&
-            typeof obj.text === 'string'
-          ) {
-            acc.textContent += `${obj.text}\n`
-          }
-          // Extract images from code interpreter outputs
-          if (
-            obj.type === 'image' &&
-            typeof obj.url === 'string'
-          ) {
-            acc.imageFiles.push(obj.url)
-          }
+          obj.forEach(traverse)
+          return
+        }
+        if (typeof obj !== 'object') return
 
-          // Sometimes, `output_text` can appear at the top level
-          if (typeof obj.output_text === 'string') {
-            acc.textContent += `${obj.output_text}\n`
-          }
-
-          // Recursively search all properties
-          for (const key of Object.keys(obj)) {
-            extractOpenAIResponse(obj[key], acc)
+        if (
+          obj.type === 'code_interpreter_call' &&
+          Array.isArray(obj.results)
+        ) {
+          for (const res of obj.results) {
+            if (res.type === 'files' && Array.isArray(res.files)) {
+              for (const f of res.files) {
+                if (f.file_id) generatedFileIds.push(f.file_id)
+              }
+            }
           }
         }
 
-        return acc
+        for (const value of Object.values(obj)) {
+          traverse(value)
+        }
       }
 
-      // Example usage after your response:
-      const result = extractOpenAIResponse(response)
+      traverse(response.output)
 
-      console.log(
-        `${ 
-          getConsoleMetadata(
-            LOG_TYPE, 
-            true,
-            FILE_NAME, 
-            'analyzeData()'
-          )
-        } result: `, 
-        result
-      )
+      const textContent = response.output_text || ''
+
+      // 6. Download each generated file from the container
+      const imageFiles: string[] = []
+      for (const fileId of generatedFileIds) {
+        try {
+          const fileRes = await client.containers.files.content.retrieve(fileId, {
+            container_id: containerId
+          })
+          const arrayBuffer = await fileRes.arrayBuffer()
+          imageFiles.push(Buffer.from(arrayBuffer).toString('base64'))
+        } catch (err) {
+          console.error('Error retrieving container file:', err)
+        }
+      }
+
+      const result: DATA_ANALYSIS_RESULT__OPENAI = {
+        textContent,
+        imageFiles
+      }
 
       // // Look for `output_text` content in the top-level response
       // if (response.output_text) {
@@ -275,9 +280,15 @@ class OpenAIService {
       //   }
       // })
 
-      // 5. Clean up: delete uploaded files
+      // 7. Clean up: delete uploaded files and container
       for (const fileId of uploadedFiles) {
         await client.files.delete(fileId)
+      }
+
+      try {
+        await client.containers.delete(containerId)
+      } catch (err) {
+        console.error('Error deleting container:', err)
       }
 
       return result
