@@ -47,7 +47,7 @@ export class ServerCrypto {
     //   {
     //     N: 16384, // CPU/memory cost, i.e. level of brute-force attack reststance
     //     r: 8, // block size (higher values are more secure)
-    //     p: 1, // level of resistance to paralel attacks
+    //     p: 1, // level of resistance to parallel attacks
     //     maxmem: 32 * 1024 * 1024, // limits the amount of memory used
     //   }
     // )
@@ -193,7 +193,7 @@ export class ServerCrypto {
 /**
  * @dev Client-side cryptography using Node.js's built-in `crypto.subtle` 
  *      library
- * @notice See the `README.md` for how to generate an asymmmetric key and 
+ * @notice See the `README.md` for how to generate an asymmetric key and
  *         initialization vector to use the `encryptThenEncode` and 
  *         `decodeThenDecrypt` functions.
  */
