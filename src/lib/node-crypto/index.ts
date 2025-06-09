@@ -45,7 +45,7 @@ export class ServerCrypto {
     //   this.salt,
     //   SSCrypto.ENCRYPTION_KEY_LENGTH,
     //   {
-    //     N: 16384, // CPU/memory cost, i.e. level of brute-force attack reststance
+    //     N: 16384, // CPU/memory cost, i.e. level of brute-force attack resistance
     //     r: 8, // block size (higher values are more secure)
     //     p: 1, // level of resistance to parallel attacks
     //     maxmem: 32 * 1024 * 1024, // limits the amount of memory used
