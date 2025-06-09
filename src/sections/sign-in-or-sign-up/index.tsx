@@ -175,20 +175,18 @@ const SignInOrSignUp: FC<SignInOrSignUpProps> = ({}) => {
 
       const { message } = json as any
 
+      switch (message) {
+        // case 'Username exists':
+        //   setIsUsernameTaken(true)
+        //   setIsWaitingForResponse(false)
+        //   break
 
-        switch (message) {
-          // case 'Username exists':
-          //   setIsUsernameTaken(true)
-          //   setIsWaitingForResponse(false)
-          //   break
+        case 'User has successfully signed up':
+          // Authenticate user
+          setIsAuthenticated(true)
 
-          case 'User has successfully signed up':
-            // Authenticate user
-            setIsAuthenticated(true)
-
-            router.push('/')
-            break
-        }
+          router.push('/')
+          break
       }
     } catch (error: any) {
       setIsWaitingForResponse(false)
