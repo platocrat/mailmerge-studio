@@ -7,7 +7,7 @@ function useWindowWidth () {
   const [windowWidth, setWindowWidth] = useState(0)
 
   useEffect(() => {
-    if (window !== undefined) {
+    if (typeof window !== 'undefined') {
       const handleResize = () => {
         setWindowWidth(window.innerWidth)
       }
@@ -22,7 +22,7 @@ function useWindowWidth () {
   }, [])
 
   useLayoutEffect(() => {
-    if (window !== undefined) {
+    if (typeof window !== 'undefined') {
       setWindowWidth(window.innerWidth)
     }
   }, [])
