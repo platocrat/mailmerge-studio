@@ -261,6 +261,7 @@ const demoDashboards = {
         labels: ['Very Satisfied', 'Satisfied', 'Neutral', 'Dissatisfied', 'Very Dissatisfied'],
         datasets: [
           {
+            label: 'Number of Respondents',
             data: [45, 35, 12, 5, 3],
             backgroundColor: [
               'rgba(16, 185, 129, 0.5)',
