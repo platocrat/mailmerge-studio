@@ -302,9 +302,6 @@ const _ = () => {
                   onChange={ handleInputChange }
                   className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-black'
                 />
-                <p className='mt-1 text-xs text-gray-500'>
-                  { `Add commands like #csv #sum #filter for data processing` }
-                </p>
               </div>
 
               <div>
@@ -360,6 +357,9 @@ const _ = () => {
                   <div className='text-sm text-gray-500 mt-2'>
                     { `Total size: ${ formatFileSize(totalSize) } / ${ MAX_TOTAL_SIZE_MB }MB` }
                   </div>
+                  <p className='mt-1 text-xs text-gray-500'>
+                    { `Add CSV, JSON, or image attachments for data processing` }
+                  </p>
                   <button
                     type='button'
                     onClick={ handleAddAttachment }
