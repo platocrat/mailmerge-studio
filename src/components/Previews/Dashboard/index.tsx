@@ -6,9 +6,11 @@ import { postmarkService } from '@/services'
 import type { PROJECT__DYNAMODB } from '@/types'
 import EmailDashboardModal from '@/components/Modals/EmailDashboard'
 import { getConsoleMetadata } from '@/utils'
+import DataVisualization from '@/components/DataViz/SampleDataViz'
 
 interface DashboardPreviewProps {
   project: PROJECT__DYNAMODB
+  dashboard?: any // Accept dashboard as an optional prop
   showControls?: boolean
 }
 
@@ -20,6 +22,7 @@ const LOG_TYPE = 'CLIENT'
 // ------------------------------- Component -----------------------------------
 const DashboardPreview: FC<DashboardPreviewProps> = ({
   project,
+  dashboard, // Accept dashboard prop
   showControls = true,
 }) => {
   // ----------------------------- States --------------------------------------
@@ -44,10 +47,10 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
     return formattedDate
   }
 
-  // Use the first email as the dashboard data source
-  const email = project.emails && project.emails.length > 0 
-    ? project.emails[0] 
-    : null
+  // Use dashboard prop if provided, otherwise fallback to first email (legacy)
+  const summary = dashboard?.summary || null
+  const chartData = dashboard?.chartData || null
+  const processedAt = dashboard?.processedAt || null
 
 
   // ------------------------------ Handlers -----------------------------------
@@ -70,21 +73,17 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
   ) => {
     const htmlBody = `
       <h2>Dashboard: ${ project.id }</h2>
-      <p>Generated on ${ formatDate(new Date(email?.processedAt ?? 0)) }</p>
+      <p>Generated on ${ formatDate(new Date(processedAt || 0)) }</p>
       ${
         additionalMessage  
           ? `<p>${additionalMessage}</p>` 
           : ''
         }
       <h3>Summary</h3>
-      <div>${ email?.summaryFileUrl ?? '' }</div>
-      ${ email?.visualizationUrls && email.visualizationUrls.length > 0 ? `
+      <div>${ summary ? JSON.stringify(summary) : '' }</div>
+      ${ chartData && chartData.labels && chartData.datasets ? `
           <h3>Data Visualizations</h3>
-          ${ email.visualizationUrls.map((imageUrl: string, i: number): string => `
-            <div>
-              <img src="${ imageUrl }" alt="Data Visualization ${ i + 1 }" />
-            </div>
-          `).join('')}
+          <pre>${JSON.stringify(chartData, null, 2)}</pre>
         ` 
         : ''
       }
@@ -104,87 +103,33 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
       <div className='bg-white rounded-lg shadow-md overflow-hidden'>
         <div className='bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4'>
           <h2 className='text-xl font-bold text-white'>
-            { `Dashboard: ${project.id}` }
+            { `Dashboard: ${dashboard?.id || project.id}` }
           </h2>
           <p className='text-blue-100 text-sm mt-1'>
-            { `Generated on ${ formatDate(new Date(email?.processedAt ?? 0)) }` }
+            { `Generated on ${ formatDate(new Date(processedAt || 0)) }` }
           </p>
         </div>
-
         <div className='p-6'>
-          {/* Text Content */}
-          <div className='mb-6'>
-            <h3 className='text-lg font-medium text-gray-900 mb-3'>
-              { `Summary` }
-            </h3>
-            <div className='prose max-w-none'>
-              <iframe 
-                src={ email?.summaryFileUrl }
-                className='w-full h-64 border-0'
-                title='Summary Content'
-              />
-            </div>
-          </div>
-
-          {/* Data Visualizations */}
-          { email?.visualizationUrls && 
-            email.visualizationUrls.length > 0 && (
-            <div className='mb-6'>
-              <h3 className='text-lg font-medium text-gray-900 mb-3'>
-                { `Data Visualizations` }
-              </h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                { email.visualizationUrls.map((imageUrl: string, i: number) => (
-                  <div 
-                    key={ i } 
-                    className='border border-gray-200 rounded-lg overflow-hidden'
-                  >
-                    <img 
-                      src={ imageUrl } 
-                      alt={ `Data Visualization ${ i + 1 }` }
-                      className='w-full h-auto'
-                    />
-                  </div>
-                ))}
+          {dashboard ? (
+            <DataVisualization
+              chartData={dashboard.chartData}
+              summary={dashboard.summary}
+              title={dashboard.dataType ? `${dashboard.dataType.toUpperCase()} Data Visualization` : 'Data Visualization'}
+              accessibilityDescription={`Chart showing ${dashboard.dataType || ''} data from email ${dashboard.sourceEmailId}`}
+            />
+          ) : (
+            // Legacy fallback rendering
+            <>
+              <div className='mb-6'>
+                <h3 className='text-lg font-medium text-gray-900 mb-3'>
+                  { `Summary` }
+                </h3>
+                <div className='prose max-w-none'>
+                  <span>{ `No summary available.` }</span>
+                </div>
               </div>
-            </div>
+            </>
           )}
-
-          {/* Attachments preview */}
-          { email?.attachmentUrls && 
-            email.attachmentUrls.length > 0 && (
-            <div className='mt-6'>
-              <h3 className='text-lg font-medium text-gray-900 mb-3'>
-                { `Attachments` }
-              </h3>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
-                { email.attachmentUrls.map((url: string, i: number) => (
-                  <div
-                    key={ i }
-                    className='border border-gray-200 rounded-md p-3 flex items-center'
-                  >
-                    <div className='bg-gray-100 p-2 rounded-md'>
-                      <Download className='h-5 w-5 text-gray-500' />
-                    </div>
-                    <div className='ml-3'>
-                      <p className='text-sm font-medium text-gray-900'>
-                        { `Attachment ${ i + 1 }` }
-                      </p>
-                      <a
-                        href={url}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='text-xs text-blue-600 hover:text-blue-800'
-                      >
-                        { `View File` }
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Dashboard controls */}
           { showControls && (
             <div className='mt-6 pt-4 border-t border-gray-200 flex justify-end space-x-3'>
@@ -213,7 +158,6 @@ const DashboardPreview: FC<DashboardPreviewProps> = ({
           )}
         </div>
       </div>
-
       <EmailDashboardModal
         isOpen={isEmailModalOpen}
         onClose={ () => setIsEmailModalOpen(false) }

@@ -734,7 +734,7 @@ const _ = () => {
               <div className='space-y-8'>
                 { dashboards.map((dashboard) => (
                   <div key={ dashboard.id }>
-                    <DashboardPreview project={ project } />
+                    <DashboardPreview project={ project } dashboard={ dashboard } />
                   </div>
                 )) }
               </div>
